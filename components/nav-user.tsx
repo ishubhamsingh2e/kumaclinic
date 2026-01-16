@@ -8,9 +8,10 @@ import {
 	LogOut,
 	Sparkles,
 	Settings,
+	Building2,
 } from "lucide-react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
 	DropdownMenu,
@@ -38,6 +39,8 @@ export function NavUser({
 	};
 }) {
 	const { isMobile } = useSidebar();
+	const { data: session } = useSession();
+	const isManager = session?.user?.role === "CLINIC_MANAGER" || session?.user?.role === "SUPER_ADMIN";
 
 	return (
 		<SidebarMenu>
@@ -92,13 +95,19 @@ export function NavUser({
 									Settings
 								</Link>
 							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<CreditCard />
-								Billing
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<Bell />
-								Notifications
+							{isManager && (
+								<DropdownMenuItem asChild>
+									<Link href="/dashboard/clinic">
+										<Building2 />
+										Clinic Profile
+									</Link>
+								</DropdownMenuItem>
+							)}
+							<DropdownMenuItem asChild>
+								<Link href="/dashboard/notifications">
+									<Bell />
+									Notifications
+								</Link>
 							</DropdownMenuItem>
 						</DropdownMenuGroup>
 						<DropdownMenuSeparator />

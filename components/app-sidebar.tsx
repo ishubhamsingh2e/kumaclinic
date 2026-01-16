@@ -4,103 +4,86 @@ import * as React from "react";
 import { useSession } from "next-auth/react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions";
-import {
-	BookOpen,
-	Bot,
-	Command,
-	Frame,
-	LifeBuoy,
-	Map,
-	PieChart,
-	Send,
-	Settings2,
-	SquareTerminal,
-	Users,
-	LayoutDashboard,
-	User,
-} from "lucide-react";
+import { LayoutDashboard, User, Shield, LockKeyhole, Building2, Settings } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
+import { ClinicSwitcher } from "@/components/clinic-switcher";
 import {
-	Sidebar,
-	SidebarContent,
-	SidebarFooter,
-	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
 } from "@/components/ui/sidebar";
-import Image from "next/image";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-	const { data: session } = useSession();
-	const { hasPermission } = usePermissions();
+  const { data: session } = useSession();
+  const { hasPermission } = usePermissions();
 
-	const navMain = [
-		{
-			title: "Dashboard",
-			url: "/dashboard",
-			icon: LayoutDashboard,
-		},
-		{
-			title: "Patients",
-			url: "/dashboard/patients",
-			icon: User,
-		},
-	];
+  const navMain = [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      title: "Patients",
+      url: "/dashboard/patients",
+      icon: User,
+    },
+    {
+      title: "Settings",
+      url: "/dashboard/settings",
+      icon: Settings,
+    },
+  ];
 
-	if (hasPermission(PERMISSIONS.USER_MANAGE)) {
-		navMain.push({
-			title: "Users",
-			url: "/dashboard/users",
-			icon: Users,
-		});
-	}
+  if (session?.user?.role === "CLINIC_MANAGER" || session?.user?.role === "SUPER_ADMIN") {
+    navMain.push({
+      title: "Clinic Profile",
+      url: "/dashboard/clinic",
+      icon: Building2,
+    });
+  }
 
-	const user = {
-		name: session?.user?.name ?? "",
-		email: session?.user?.email ?? "",
-		avatar: session?.user?.image ?? "",
-	};
+  if (hasPermission(PERMISSIONS.CLINIC_OWNER_MANAGE)) {
+    navMain.push({
+      title: "Admin",
+      url: "/admin",
+      icon: Shield,
+    });
+  }
 
-	return (
-		<Sidebar variant="inset" {...props}>
-			<SidebarHeader>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" asChild>
-							<a href="/dashboard">
-								<div className="overflow-clip rounded-full">
-									<Image
-										src="/icon/light.png"
-										alt="Kumacare"
-										width={32}
-										height={32}
-									/>
-								</div>
-								<div className="grid flex-1 text-left text-sm leading-tight">
-									<span className="truncate font-semibold">
-										Kumacare (Clinic)
-									</span>
-									<span className="truncate text-xs">
-										Product of kumasoft.in
-									</span>
-								</div>
-							</a>
-						</SidebarMenuButton>
-					</SidebarMenuItem>
-				</SidebarMenu>
-			</SidebarHeader>
-			<SidebarContent>
-				<NavMain items={navMain} />
-				<NavSecondary items={[]} className="mt-auto" />
-			</SidebarContent>
-			<SidebarFooter>
-				<NavUser user={user} />
-			</SidebarFooter>
-		</Sidebar>
-	);
+  if (
+    hasPermission(PERMISSIONS.ROLE_MANAGE) ||
+    hasPermission(PERMISSIONS.CLINIC_OWNER_MANAGE)
+  ) {
+    navMain.push({
+      title: "Roles & Permissions",
+      url: "/admin/roles",
+      icon: LockKeyhole,
+    });
+  }
+
+  const user = {
+    name: session?.user?.name ?? "",
+    email: session?.user?.email ?? "",
+    avatar: session?.user?.image ?? "",
+  };
+
+  return (
+    <Sidebar variant="inset" {...props}>
+      <SidebarHeader>
+        <ClinicSwitcher />
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={navMain} />
+        <NavSecondary items={[]} className="mt-auto" />
+      </SidebarContent>
+      <SidebarFooter>
+        <NavUser user={user} />
+      </SidebarFooter>
+    </Sidebar>
+  );
 }

@@ -41,11 +41,84 @@ model Session {
 }
 
 model Clinic {
-  id        String   @id @default(cuid())
-  name      String
+  id              String   @id @default(cuid())
+  name            String
+  slug            String?  @unique
+  ownerId         String?  // Added ownerId
+  bio             String?
+  coverImage      String?
+  profileImage    String?
+  googleReviewsUrl String?
+  isPublished     Boolean  @default(false)
+  
+  // Main contact
+  email           String?
+  phone           String?
+  whatsapp        String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  users     User[] // A clinic can have multiple users
+  
+  owner     User?    @relation("ClinicOwner", fields: [ownerId], references: [id])
+  members   ClinicMember[]
+  invitations Invitation[]
+  locations   ClinicLocation[]
+}
+
+model ClinicLocation {
+  id          String   @id @default(cuid())
+  clinicId    String
+  name        String
+  address     String
+  city        String?
+  state       String?
+  zip         String?
+  phone       String?
+  email       String?
+  whatsapp    String?
+  googleMapsUrl String?
+  openingHours Json? // e.g. { "monday": { "open": "09:00", "close": "17:00", "closed": false }, ... }
+  
+  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ClinicMember {
+  id        String   @id @default(cuid())
+  userId    String
+  clinicId  String
+  roleId    String
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, clinicId])
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  clinicId  String
+  roleId    String
+  token     String   @unique
+  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  inviterId String
+  
+  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id])
+  inviter   User     @relation("UserInvitations", fields: [inviterId], references: [id])
+  
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
 }
 
 model Permission {
@@ -58,8 +131,9 @@ model Permission {
 model Role {
   id          String       @id @default(cuid())
   name        String       @unique // e.g., "CLINIC_MANAGER", "DOCTOR"
-  users       User[]
+  members     ClinicMember[]
   permissions Permission[]
+  invitations Invitation[]
 }
 
 model User {
@@ -74,15 +148,50 @@ model User {
   accounts             Account[]
   sessions             Session[]
 
+  // Extended Profile
+  title           String?   // Ms., Mrs., Dr., etc.
+  phone           String?
+  dob             DateTime?
+  address         String?
+  
+  // Doctor specific
+  licenseNumber   String?
+  signatureUrl    String?
+
   // Additions for multi-tenancy and RBAC
-  clinicId String?
-  clinic   Clinic? @relation(fields: [clinicId], references: [id])
+  defaultClinicId String?
+  memberships     ClinicMember[]
+  ownedClinics    Clinic[] @relation("ClinicOwner")
+  invitationsSent Invitation[] @relation("UserInvitations")
+  
+  notificationSettings NotificationSettings?
+  notifications       Notification[]
 
-  roleId String?
-  role   Role?   @relation(fields: [roleId], references: [id])
+  @@index([defaultClinicId])
+}
 
-  @@index([clinicId])
-  @@index([roleId])
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  type      String   @default("INFO") // INFO, INVITE_RECEIVED, etc.
+  link      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationSettings {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  newsletter  Boolean @default(true)
+  appointment Boolean @default(true)
+  security    Boolean @default(true) // User Login etc.
+  marketing   Boolean @default(false)
 }
 
 model VerificationToken {

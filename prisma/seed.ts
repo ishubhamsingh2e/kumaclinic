@@ -19,7 +19,12 @@ async function main() {
   // Create Roles and associate permissions
   const superAdminRole = await prisma.role.upsert({
     where: { name: "SUPER_ADMIN" },
-    update: {},
+    update: {
+      permissions: {
+        set: [], // Clear existing relations to re-connect all
+        connect: permissions.map((p) => ({ id: p.id })),
+      },
+    },
     create: {
       name: "SUPER_ADMIN",
       permissions: { connect: permissions.map((p) => ({ id: p.id })) }, // Super admin gets all permissions
@@ -62,17 +67,45 @@ async function main() {
 
   if (adminEmail && adminName && adminPassword) {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    await prisma.user.upsert({
+    const user = await prisma.user.upsert({
       where: { email: adminEmail },
-      update: {
-        roleId: superAdminRole.id,
-      },
+      update: {},
       create: {
         email: adminEmail,
         name: adminName,
         password: hashedPassword,
+      },
+    });
+
+    const defaultClinic = await prisma.clinic.upsert({
+      where: { id: "default-clinic" },
+      update: {},
+      create: {
+        id: "default-clinic",
+        name: "Default Clinic",
+      },
+    });
+
+    await prisma.clinicMember.upsert({
+      where: {
+        userId_clinicId: {
+          userId: user.id,
+          clinicId: defaultClinic.id,
+        },
+      },
+      update: {
         roleId: superAdminRole.id,
       },
+      create: {
+        userId: user.id,
+        clinicId: defaultClinic.id,
+        roleId: superAdminRole.id,
+      },
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { defaultClinicId: defaultClinic.id },
     });
   }
 }

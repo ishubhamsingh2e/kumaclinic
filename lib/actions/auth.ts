@@ -8,7 +8,7 @@ export async function login(
 ) {
   if (provider === "credentials" && credentials) {
     await signIn("credentials", {
-      redirect: "/",
+      redirect: true,
       email: credentials.email,
       password: credentials.password,
     });
@@ -18,5 +18,5 @@ export async function login(
 }
 
 export async function logout(provider: string) {
-  await signOut({ redirect: "/login" });
+  await signOut({ redirect: true });
 }

@@ -9,9 +9,11 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      clinicId: string | null;
+      activeClinicId: string | null;
+      defaultClinicId: string | null;
       role: string | null;
       permissions: string[];
+      clinics: { id: string; name: string; role: string }[];
     } & DefaultSession["user"];
   }
 }
@@ -62,30 +64,60 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        // On sign-in
+    async jwt({ token, user, trigger, session }) {
+      if (user || trigger === "update") {
+        const userId = user?.id || (token.id as string);
         const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
+          where: { id: userId },
           include: {
-            role: { include: { permissions: true } },
-            clinic: true,
+            memberships: {
+              include: {
+                clinic: true,
+                role: { include: { permissions: true } },
+              },
+            },
           },
         });
+
         if (dbUser) {
           token.id = dbUser.id;
-          token.clinicId = dbUser.clinicId;
-          token.role = dbUser.role?.name;
-          token.permissions = dbUser.role?.permissions.map((p) => p.name) ?? [];
+
+          // Determine active clinic:
+          // 1. If manual update, use session.activeClinicId
+          // 2. Else use dbUser.defaultClinicId
+          // 3. Else use first membership
+          let activeClinicId =
+            session?.activeClinicId || dbUser.defaultClinicId;
+
+          if (!activeClinicId && dbUser.memberships.length > 0) {
+            activeClinicId = dbUser.memberships[0].clinicId;
+          }
+
+          const activeMembership = dbUser.memberships.find(
+            (m) => m.clinicId === activeClinicId,
+          );
+
+          token.activeClinicId = activeClinicId;
+          token.defaultClinicId = dbUser.defaultClinicId;
+          token.role = activeMembership?.role?.name || null;
+          token.permissions =
+            activeMembership?.role?.permissions.map((p) => p.name) ?? [];
+          token.clinics = dbUser.memberships.map((m) => ({
+            id: m.clinic.id,
+            name: m.clinic.name,
+            role: m.role.name,
+          }));
         }
       }
       return token;
     },
     async session({ session, token }) {
       session.user.id = token.id as string;
-      session.user.clinicId = token.clinicId as string | null;
+      session.user.activeClinicId = token.activeClinicId as string | null;
+      session.user.defaultClinicId = token.defaultClinicId as string | null;
       session.user.role = token.role as string | null;
       session.user.permissions = token.permissions as string[];
+      session.user.clinics = (token.clinics as any) || [];
       return session;
     },
   },

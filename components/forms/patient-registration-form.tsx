@@ -37,6 +37,7 @@ import { NumberInput } from "../ui/number-input";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { ChevronDownIcon } from "lucide-react";
+import { toast } from "sonner";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -54,6 +55,15 @@ export function PatientRegistrationForm() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [dob, setDob] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!state.message) return;
+    if (state.type === "success") {
+      toast.success(state.message);
+    } else if (state.type === "error") {
+      toast.error(state.message);
+    }
+  }, [state]);
 
   const age = useMemo(() => {
     if (!dob) return { years: "", months: "", days: "" };
@@ -485,16 +495,6 @@ export function PatientRegistrationForm() {
       <div className="flex items-center justify-end space-x-2">
         <SubmitButton />
       </div>
-
-      {state.message && (
-        <p
-          className={`mt-4 ${
-            state.type === "error" ? "text-red-500" : "text-green-500"
-          }`}
-        >
-          {state.message}
-        </p>
-      )}
     </form>
   );
 }
