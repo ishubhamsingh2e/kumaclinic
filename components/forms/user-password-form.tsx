@@ -5,7 +5,6 @@ import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { updatePassword } from "@/lib/actions/user";
 import { toast } from "sonner";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,7 +45,7 @@ export function UserPasswordForm() {
   const isValidLength = newPassword.length >= 6;
   const isMatching = newPassword === confirmPassword && confirmPassword !== "";
   const hasCurrent = currentPassword.length > 0;
-  
+
   const isValid = isValidLength && isMatching && hasCurrent;
 
   return (
@@ -54,43 +53,52 @@ export function UserPasswordForm() {
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="currentPassword">Current Password</Label>
-          <Input 
-            id="currentPassword" 
-            name="currentPassword" 
-            type="password" 
+          <Input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            required 
+            required
           />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="newPassword">New Password</Label>
-          <Input 
-            id="newPassword" 
-            name="newPassword" 
-            type="password" 
+          <Input
+            id="newPassword"
+            name="newPassword"
+            type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            required 
-            minLength={6} 
+            required
+            minLength={6}
           />
-           <div className="text-xs text-muted-foreground flex items-center gap-2">
-            <span className={cn("flex items-center gap-1", isValidLength ? "text-green-500" : "text-muted-foreground")}>
-              {isValidLength ? <Check className="h-3 w-3" /> : <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />}
+          <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <span
+              className={cn(
+                "flex items-center gap-1",
+                isValidLength ? "text-green-500" : "text-muted-foreground",
+              )}
+            >
+              {isValidLength ? (
+                <Check className="h-3 w-3" />
+              ) : (
+                <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+              )}
               At least 6 characters
             </span>
           </div>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="confirmPassword">Confirm New Password</Label>
-          <Input 
-            id="confirmPassword" 
-            name="confirmPassword" 
-            type="password" 
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            required 
-            minLength={6} 
+            required
+            minLength={6}
           />
           {confirmPassword.length > 0 && (
             <div className="text-xs flex items-center gap-1">
@@ -107,9 +115,17 @@ export function UserPasswordForm() {
           )}
         </div>
         <div className="flex justify-end">
-            <SubmitButton disabled={!isValid} />
+          <SubmitButton disabled={!isValid} />
         </div>
       </div>
     </form>
   );
+}
+function updatePassword(state: {
+  message: string;
+  type: string;
+}):
+  | { message: string; type: string }
+  | Promise<{ message: string; type: string }> {
+  throw new Error("Function not implemented.");
 }

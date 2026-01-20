@@ -1,20 +1,22 @@
-import { getMyInvitations } from "@/lib/actions/clinic";
-import { InvitationBanner } from "@/components/invitation-banner";
-import DashboardView from "@/components/dashboard-view";
+import { hasPermission } from "@/lib/rbac";
+import { PERMISSIONS } from "@/lib/permissions";
 
-export default async function Dashboard() {
-  const invitations = await getMyInvitations();
+export default async function DashboardPage() {
+  const canViewDashboard = await hasPermission(PERMISSIONS.DASHBOARD_READ);
+
+  if (!canViewDashboard) {
+    return (
+      <div>
+        <h1>Access Denied</h1>
+        <p>You do not have permission to view this page.</p>
+      </div>
+    );
+  }
 
   return (
-    <DashboardView title="Dashboard">
-      <InvitationBanner invitations={invitations} />
-      
-      <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-        <div className="bg-muted/50 aspect-video rounded-xl" />
-        <div className="bg-muted/50 aspect-video rounded-xl" />
-        <div className="bg-muted/50 aspect-video rounded-xl" />
-      </div>
-      <div className="bg-muted/50 min-h-screen mt-4 flex-1 rounded-xl md:min-h-min" />
-    </DashboardView>
+    <div>
+      <h1>Dashboard</h1>
+      <p>Welcome to your dashboard!</p>
+    </div>
   );
 }

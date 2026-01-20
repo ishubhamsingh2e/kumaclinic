@@ -1,16 +1,40 @@
-import NextAuth from "next-auth";
-import { authConfig } from "./auth.config";
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
-const { auth } = NextAuth(authConfig);
+const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 
-export const proxy = (req: any) => {
-  return auth(req);
-};
+export default withAuth(
+  function middleware(req) {
+    const isLoggedIn = !!req.nextauth.token;
+    const { pathname } = req.nextUrl;
 
-export default proxy;
+    const isAuthPage = AUTH_PAGES.includes(pathname);
+
+    if (isAuthPage) {
+      if (isLoggedIn) {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+      return null;
+    }
+
+    if (!isLoggedIn) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+    return null;
+  },
+  {
+    callbacks: {
+      authorized: () => true,
+    },
+  },
+);
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|public|.*\\..*$).*)",
+    "/dashboard/:path*",
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
   ],
 };

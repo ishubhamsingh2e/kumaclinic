@@ -1,9 +1,36 @@
 export const PERMISSIONS = {
+  // Patient
+  PATIENT_READ: "patient:read",
   PATIENT_CREATE: "patient:create",
-  PATIENT_VIEW_ALL: "patient:view:all",
-  SETTINGS_EDIT: "settings:edit",
-  USER_MANAGE: "user:manage", // Invite/remove users from clinic
-  CLINIC_OWNER_MANAGE: "clinic_owner:manage",
-  ROLE_MANAGE: "role:manage",
+  PATIENT_UPDATE: "patient:update",
+  PATIENT_DELETE: "patient:delete",
+
+  // Appointment
+  APPOINTMENT_READ: "appointment:read",
+  APPOINTMENT_CREATE: "appointment:create",
+  APPOINTMENT_UPDATE: "appointment:update",
+  APPOINTMENT_DELETE: "appointment:delete",
+
+  // User
+  USER_READ: "user:read",
+  USER_CREATE: "user:create",
+  USER_UPDATE: "user:update",
+  USER_DELETE: "user:delete",
+
+  // Role
+  ROLE_READ: "role:read",
+  ROLE_CREATE: "role:create",
+  ROLE_UPDATE: "role:update",
+  ROLE_DELETE: "role:delete",
+
+  // Dashboard
+  DASHBOARD_READ: "dashboard:read",
+
+  // Clinic
+  CLINIC_UPDATE: "clinic:update",
+
+  // Special Permissions
+  USER_MANAGE: "user:manage",
 } as const;
+
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

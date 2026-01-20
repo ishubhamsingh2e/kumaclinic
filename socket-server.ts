@@ -19,10 +19,13 @@ io.on("connection", (socket) => {
   });
 
   // Handle internal emission from server actions
-  socket.on("send-notification", (data: { userId: string, notification: any }) => {
-    io.to(data.userId).emit("new-notification", data.notification);
-    console.log(`Notification sent to user ${data.userId}`);
-  });
+  socket.on(
+    "send-notification",
+    (data: { userId: string; notification: Notification }) => {
+      io.to(data.userId).emit("new-notification", data.notification);
+      console.log(`Notification sent to user ${data.userId}`);
+    },
+  );
 
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);

@@ -1,6 +1,6 @@
-import DashboardView from "@/components/dashboard-view";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import DashboardView from "@/components/dashboard-view";
 
 export default function SettingsLoading() {
   return (
@@ -11,7 +11,7 @@ export default function SettingsLoading() {
           <Skeleton className="h-9 w-20" />
           <Skeleton className="h-9 w-32" />
         </div>
-        
+
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-32 mb-2" />

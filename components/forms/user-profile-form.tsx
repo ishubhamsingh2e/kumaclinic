@@ -1,10 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateUser } from "@/lib/actions/user";
 import {
   Select,
   SelectContent,
@@ -21,11 +19,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { CalendarIcon, CircleAlert, Camera, User } from "lucide-react";
+import { CalendarIcon, Camera, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
 
 interface UserProfileFormProps {
   user: {
@@ -40,20 +38,12 @@ interface UserProfileFormProps {
     licenseNumber?: string | null;
     role?: string | null;
   };
+  slotDuration?: number | null;
 }
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending || disabled}>
-      {pending ? "Saving..." : "Save Changes"}
-    </Button>
-  );
-}
-
-export function UserProfileForm({ user }: UserProfileFormProps) {
-  const initialState = { type: "", message: "" };
-  const [state, formAction] = useActionState(updateUser, initialState);
+export function UserProfileForm({ user, slotDuration }: UserProfileFormProps) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [date, setDate] = useState<Date | undefined>(
     user.dob ? new Date(user.dob) : undefined,
   );
@@ -80,6 +70,11 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image must be less than 5MB");
+        return;
+      }
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
       setImageFile(file);
@@ -96,24 +91,68 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
     date?.getTime() !== (user.dob ? new Date(user.dob).getTime() : undefined) ||
     imageFile !== null;
 
-  useEffect(() => {
-    if (state?.type === "success") {
-      toast.success(state.message);
-    } else if (state?.type === "error") {
-      toast.error(state.message);
-    } else if (state?.type === "info") {
-      toast.info(state.message);
-    }
-  }, [state]);
+  const isDoctor = formData.title === "Dr.";
 
-  const isDoctor =
-    user.role === "DOCTOR" ||
-    user.role === "CLINIC_MANAGER" ||
-    user.role === "SUPER_ADMIN";
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      let imagePath = user.image;
+
+      // Upload image if changed
+      if (imageFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", imageFile);
+
+        const uploadResponse = await fetch("/api/upload/avatar", {
+          method: "POST",
+          body: uploadFormData,
+        });
+
+        const uploadData = await uploadResponse.json();
+
+        if (!uploadResponse.ok) {
+          throw new Error(uploadData.error || "Failed to upload image");
+        }
+
+        imagePath = uploadData.path;
+      }
+
+      const response = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          dob: date ? date.toISOString() : null,
+          image: imagePath,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update profile");
+      }
+
+      toast.success(data.message || "Profile updated successfully");
+      
+      // Refresh the page to show updated data
+      router.refresh();
+      
+      // Reset image file state
+      setImageFile(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile");
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <form action={formAction}>
+      <form onSubmit={handleSubmit}>
         <div className="space-y-6">
           <div className="flex items-center gap-6">
             <div className="group relative">
@@ -144,7 +183,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
               <p className="text-muted-foreground text-sm">
                 Click the camera icon to upload a new photo.
                 <br />
-                JPG, GIF or PNG. 1MB max.
+                JPG, PNG or WebP. 5MB max.
               </p>
             </div>
           </div>
@@ -154,7 +193,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
               <Label htmlFor="title">Title</Label>
               <Select
                 name="title"
-                defaultValue={formData.title}
+                value={formData.title}
                 onValueChange={(val) => handleChange("title", val)}
               >
                 <SelectTrigger id="title" className="w-full">
@@ -177,6 +216,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
                 value={formData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
                 placeholder="John Doe"
+                required
               />
             </div>
 
@@ -189,6 +229,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
                 placeholder="m@example.com"
+                required
               />
             </div>
 
@@ -209,6 +250,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
+                    type="button"
                     variant={"outline"}
                     className={cn(
                       "w-full justify-start text-left font-normal",
@@ -231,26 +273,34 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
                   />
                 </PopoverContent>
               </Popover>
-              <input
-                type="hidden"
-                name="dob"
-                value={date ? date.toISOString().split("T")[0] : ""}
-              />
             </div>
 
             {isDoctor && (
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="licenseNumber">License Number</Label>
-                <Input
-                  id="licenseNumber"
-                  name="licenseNumber"
-                  value={formData.licenseNumber}
-                  onChange={(e) =>
-                    handleChange("licenseNumber", e.target.value)
-                  }
-                  placeholder="LIC-123456"
-                />
-              </div>
+              <>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="licenseNumber">License Number</Label>
+                  <Input
+                    id="licenseNumber"
+                    name="licenseNumber"
+                    value={formData.licenseNumber}
+                    onChange={(e) =>
+                      handleChange("licenseNumber", e.target.value)
+                    }
+                    placeholder="LIC-123456"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Slot Duration (minutes)</Label>
+                  <Input
+                    value={slotDuration || ""}
+                    readOnly
+                    className="border-dashed"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This is the default for the active clinic.
+                  </p>
+                </div>
+              </>
             )}
           </div>
 
@@ -266,7 +316,9 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
           </div>
 
           <div className="flex justify-end">
-            <SubmitButton disabled={!isChanged} />
+            <Button type="submit" disabled={isSubmitting || !isChanged}>
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
         </div>
       </form>

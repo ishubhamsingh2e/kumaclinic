@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -19,70 +12,82 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  clinicId  String
+  createdAt DateTime @default(now())
+  Clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+}
+
+model Booking {
+  id        String   @id @default(cuid())
+  patientId String
+  clinicId  String
+  start     DateTime
+  end       DateTime
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  doctorId  String?
+  Clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  User      User?    @relation(fields: [doctorId], references: [id])
+  Patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 model Clinic {
-  id              String   @id @default(cuid())
-  name            String
-  slug            String?  @unique
-  ownerId         String?  // Added ownerId
-  bio             String?
-  coverImage      String?
-  profileImage    String?
-  googleReviewsUrl String?
-  isPublished     Boolean  @default(false)
-  
-  // Main contact
-  email           String?
-  phone           String?
-  whatsapp        String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  owner     User?    @relation("ClinicOwner", fields: [ownerId], references: [id])
-  members   ClinicMember[]
-  invitations Invitation[]
-  locations   ClinicLocation[]
+  id                 String               @id @default(cuid())
+  name               String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  bio                String?
+  coverImage         String?
+  email              String?
+  googleReviewsUrl   String?
+  isPublished        Boolean              @default(false)
+  ownerId            String?
+  phone              String?
+  profileImage       String?
+  slug               String?              @unique
+  whatsapp           String?
+  ApiKey             ApiKey[]
+  Booking            Booking[]
+  User               User?                @relation(fields: [ownerId], references: [id])
+  ClinicLocation     ClinicLocation[]
+  ClinicMember       ClinicMember[]
+  ClinicSettings     ClinicSettings?
+  DoctorAvailability DoctorAvailability[]
+  Invitation         Invitation[]
 }
 
 model ClinicLocation {
-  id          String   @id @default(cuid())
-  clinicId    String
-  name        String
-  address     String
-  city        String?
-  state       String?
-  zip         String?
-  phone       String?
-  email       String?
-  whatsapp    String?
+  id            String   @id @default(cuid())
+  clinicId      String
+  name          String
+  address       String
+  city          String?
+  state         String?
+  zip           String?
+  phone         String?
+  email         String?
+  whatsapp      String?
   googleMapsUrl String?
-  openingHours Json? // e.g. { "monday": { "open": "09:00", "close": "17:00", "closed": false }, ... }
-  
-  clinic      Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  openingHours  Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  Clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 }
 
 model ClinicMember {
@@ -90,15 +95,33 @@ model ClinicMember {
   userId    String
   clinicId  String
   roleId    String
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  role      Role     @relation(fields: [roleId], references: [id])
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  Role      Role     @relation(fields: [roleId], references: [id])
+  User      User     @relation("memberships", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, clinicId])
+}
+
+model ClinicSettings {
+  id                String @id @default(cuid())
+  clinicId          String @unique
+  slotDurationInMin Int    @default(30)
+  Clinic            Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+}
+
+model DoctorAvailability {
+  id        String @id @default(cuid())
+  doctorId  String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  clinicId  String
+  Clinic    Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  User      User   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, clinicId, dayOfWeek])
 }
 
 model Invitation {
@@ -107,67 +130,16 @@ model Invitation {
   clinicId  String
   roleId    String
   token     String   @unique
-  status    String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  status    String   @default("PENDING")
   inviterId String
-  
-  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  role      Role     @relation(fields: [roleId], references: [id])
-  inviter   User     @relation("UserInvitations", fields: [inviterId], references: [id])
-  
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  Clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [inviterId], references: [id])
+  Role      Role     @relation(fields: [roleId], references: [id])
 
   @@index([email])
-}
-
-model Permission {
-  id          String  @id @default(cuid())
-  name        String  @unique // e.g., "patient:create", "settings:view"
-  description String?
-  roles       Role[]
-}
-
-model Role {
-  id          String       @id @default(cuid())
-  name        String       @unique // e.g., "CLINIC_MANAGER", "DOCTOR"
-  members     ClinicMember[]
-  permissions Permission[]
-  invitations Invitation[]
-}
-
-model User {
-  id                   String    @id @default(cuid())
-  name                 String?
-  email                String?   @unique
-  emailVerified        DateTime?
-  image                String?
-  password             String?
-  passwordResetToken   String?   @unique
-  passwordResetExpires DateTime?
-  accounts             Account[]
-  sessions             Session[]
-
-  // Extended Profile
-  title           String?   // Ms., Mrs., Dr., etc.
-  phone           String?
-  dob             DateTime?
-  address         String?
-  
-  // Doctor specific
-  licenseNumber   String?
-  signatureUrl    String?
-
-  // Additions for multi-tenancy and RBAC
-  defaultClinicId String?
-  memberships     ClinicMember[]
-  ownedClinics    Clinic[] @relation("ClinicOwner")
-  invitationsSent Invitation[] @relation("UserInvitations")
-  
-  notificationSettings NotificationSettings?
-  notifications       Notification[]
-
-  @@index([defaultClinicId])
 }
 
 model Notification {
@@ -176,12 +148,11 @@ model Notification {
   title       String
   message     String
   read        Boolean  @default(false)
-  type        String   @default("INFO") // INFO, INVITE_RECEIVED, etc.
+  type        String   @default("INFO")
   link        String?
   referenceId String?
   createdAt   DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  User        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, referenceId])
 }
@@ -189,44 +160,11 @@ model Notification {
 model NotificationSettings {
   id          String  @id @default(cuid())
   userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   newsletter  Boolean @default(true)
   appointment Boolean @default(true)
-  security    Boolean @default(true) // User Login etc.
+  security    Boolean @default(true)
   marketing   Boolean @default(false)
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-}
-
-enum MaritalStatus {
-  SINGLE
-  MARRIED
-  DIVORCED
-  WIDOWED
-}
-
-enum BloodGroup {
-  A_POSITIVE
-  A_NEGATIVE
-  B_POSITIVE
-  B_NEGATIVE
-  AB_POSITIVE
-  AB_NEGATIVE
-  O_POSITIVE
-  O_NEGATIVE
+  User        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Patient {
@@ -240,21 +178,107 @@ model Patient {
   address                   String?
   pin_code                  String?
   marital_status            MaritalStatus?
-  when_field                String? // Clarification needed
+  when_field                String?
   blood_group               BloodGroup?
   spouse_blood_group        BloodGroup?
   spouse_name               String?
   referred_by               String?
   email                     String?        @unique
   how_did_you_hear_about_us String?
-  care_of                   String? // "C/O"
+  care_of                   String?
   occupation                String?
   tag                       String?
   alternative_phone         String?
   aadhar_number             String?        @unique
   image_url                 String?
-  documents                 Json? // To store a list of document URLs
+  documents                 Json?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  Booking                   Booking[]
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Permission {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  roles       Role[]  @relation("PermissionToRole")
+}
+
+model Role {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  members     ClinicMember[]
+  invitations Invitation[]
+  permissions Permission[]   @relation("PermissionToRole")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                   String                @id @default(cuid())
+  name                 String?
+  email                String?               @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  passwordResetExpires DateTime?
+  passwordResetToken   String?               @unique
+  defaultClinicId      String?
+  address              String?
+  dob                  DateTime?
+  licenseNumber        String?
+  phone                String?
+  signatureUrl         String?
+  title                String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  Account              Account[]
+  Booking              Booking[]
+  Clinic               Clinic[]
+  memberships          ClinicMember[]        @relation("memberships")
+  DoctorAvailability   DoctorAvailability[]
+  Invitation           Invitation[]
+  Notification         Notification[]
+  NotificationSettings NotificationSettings?
+  Session              Session[]
+
+  @@index([defaultClinicId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  DIVORCED
+  WIDOWED
 }

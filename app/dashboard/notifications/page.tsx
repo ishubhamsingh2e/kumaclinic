@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import DashboardView from "@/components/dashboard-view";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { markAllNotificationsAsRead } from "@/lib/actions/notification";
 import { redirect } from "next/navigation";
 import { NotificationActions } from "@/components/notification-actions";
+import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
 
 async function getNotifications(userId: string) {
   return prisma.notification.findMany({
@@ -36,7 +37,7 @@ async function getPendingInvitations(userId: string) {
 }
 
 export default async function NotificationsPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     redirect("/login");
   }
@@ -72,8 +73,8 @@ export default async function NotificationsPage() {
           notifications.map((notification) => {
             const canAction =
               notification.type === "INVITE_RECEIVED" &&
-              notification.referenceId &&
-              pendingInvitationIds.has(notification.referenceId);
+              !!notification.referenceId && // Ensure referenceId is truthy (not null)
+              pendingInvitationIds.has(notification.referenceId as string); // Cast to string after null check
 
             return (
               <Card

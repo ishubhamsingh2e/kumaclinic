@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import NextAuthSessionProvider from "@/components/session-provider";
-import { cn } from "@/lib/utils";
-import "./globals.css";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Providers } from "../components/providers";
+import "@/styles/globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "Kumacare (Clinic)",
+  title: "Kuma Clinic",
   description: "Kumacare (Clinic) - Patient Management System",
   icons: {
     icon: [
@@ -25,10 +33,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className={cn("overflow-x-clip antialiased")}>
-        <NextAuthSessionProvider>
-          <NuqsAdapter>{children}</NuqsAdapter>
-        </NextAuthSessionProvider>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

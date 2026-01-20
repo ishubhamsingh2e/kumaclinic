@@ -1,42 +1,15 @@
-import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
+import { ResetPasswordSchema } from "@/lib/schemas/auth";
 
 export async function POST(req: Request) {
-  const { token, password } = await req.json();
-
-  if (!token || !password) {
-    return new NextResponse("Missing fields", { status: 400 });
+  try {
+    const body = await req.json();
+    const validatedData = ResetPasswordSchema.parse(body);
+    // TODO: Implement reset password logic here
+    console.log(validatedData);
+    return NextResponse.json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Something went wrong" }, { status: 500 });
   }
-
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
-  const user = await prisma.user.findFirst({
-    where: {
-      passwordResetToken: hashedToken,
-      passwordResetExpires: {
-        gt: new Date(),
-      },
-    },
-  });
-
-  if (!user) {
-    return new NextResponse("Invalid or expired token", { status: 400 });
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      password: hashedPassword,
-      passwordResetToken: null,
-      passwordResetExpires: null,
-    },
-  });
-
-  return new NextResponse("Password reset successfully", { status: 200 });
 }

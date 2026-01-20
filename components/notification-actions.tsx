@@ -5,12 +5,13 @@ import { acceptInvitation, declineInvitation } from "@/lib/actions/clinic";
 import { useSession } from "next-auth/react";
 import { useTransition } from "react";
 import { toast } from "sonner";
+import { Notification } from "@prisma/client";
 
 export function NotificationActions({
   notification,
   canAction,
 }: {
-  notification: any;
+  notification: Notification;
   canAction: boolean;
 }) {
   const { update } = useSession();
@@ -20,7 +21,7 @@ export function NotificationActions({
   const handleAccept = () => {
     startAcceptTransition(async () => {
       try {
-        const result = await acceptInvitation(notification.referenceId);
+        const result = await acceptInvitation(notification.referenceId || "");
         if (result.success) {
           toast.success("Invitation accepted!");
           await update({ activeClinicId: result.clinicId });
@@ -36,7 +37,7 @@ export function NotificationActions({
   const handleDecline = () => {
     startDeclineTransition(async () => {
       try {
-        const result = await declineInvitation(notification.referenceId);
+        const result = await declineInvitation(notification.referenceId || "");
         if (result.success) {
           toast.success("Invitation declined.");
           await update();

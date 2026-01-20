@@ -8,9 +8,11 @@ export function usePermissions() {
   const userPermissions = session?.user?.permissions ?? [];
 
   const hasPermission = (permission: Permission | Permission[]) => {
-    const requiredPermissions = Array.isArray(permission) ? permission : [permission];
-    return requiredPermissions.every(p => userPermissions.includes(p));
+    const requiredPermissions = Array.isArray(permission)
+      ? permission
+      : [permission];
+    return requiredPermissions.every((p) => userPermissions.includes(p));
   };
 
-  return { permissions: userPermissions, hasPermission };
+  return { hasPermission };
 }

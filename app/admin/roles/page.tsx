@@ -1,48 +1,51 @@
-import { hasPermission } from "@/lib/rbac";
-import { PERMISSIONS } from "@/lib/permissions";
-import { redirect } from "next/navigation";
+import DashboardView from "@/components/dashboard-view";
 import { prisma } from "@/lib/db";
-import { RoleMatrix } from "./role-matrix";
+import RolesPageClient from "./roles-client";
 
-async function getData() {
-  const roles = await prisma.role.findMany({
+async function getAllRoles() {
+  return prisma.role.findMany({
     include: {
       permissions: true,
+      _count: {
+        select: {
+          members: true,
+        },
+      },
     },
     orderBy: {
-        name: 'asc'
-    }
+      name: "asc",
+    },
   });
-
-  const permissions = await prisma.permission.findMany({
-    orderBy: {
-        name: 'asc'
-    }
-  });
-
-  return { roles, permissions };
 }
 
-export default async function RolesPage() {
-  // Check for either ROLE_MANAGE or CLINIC_OWNER_MANAGE (temporary fallback)
-  const canManageRoles = await hasPermission(PERMISSIONS.ROLE_MANAGE);
-  const canManageOwners = await hasPermission(PERMISSIONS.CLINIC_OWNER_MANAGE);
+async function getAllPermissions() {
+  return prisma.permission.findMany({
+    orderBy: {
+      name: "asc",
+    },
+  });
+}
 
-  if (!canManageRoles && !canManageOwners) {
-    return redirect("/dashboard?error=unauthorized");
-  }
+export default async function AdminRolesPage() {
+  const [roles, permissions] = await Promise.all([
+    getAllRoles(),
+    getAllPermissions(),
+  ]);
 
-  const { roles, permissions } = await getData();
+  // Transform to match expected interface (users instead of members)
+  const transformedRoles = roles.map((role) => ({
+    ...role,
+    _count: {
+      users: role._count.members,
+    },
+  }));
 
   return (
-    <div className="p-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Role & Permission Matrix</h1>
-        <p className="text-muted-foreground text-sm">
-          Map permissions to roles. Changes apply immediately.
-        </p>
-      </div>
-      <RoleMatrix roles={roles} allPermissions={permissions} />
-    </div>
+    <DashboardView title="Role Management" subtitle="Manage roles and permissions">
+      <RolesPageClient
+        initialRoles={transformedRoles}
+        allPermissions={permissions}
+      />
+    </DashboardView>
   );
 }

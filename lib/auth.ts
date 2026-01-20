@@ -1,31 +1,14 @@
-import NextAuth, { DefaultSession } from "next-auth";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { prisma } from "@/lib/db";
-import GoogleProvider from "next-auth/providers/google";
-import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { AuthOptions } from "next-auth";
+import { prisma } from "./db";
+import { ROLES } from "./rbac";
+import CredentialsProvider from "next-auth/providers/credentials";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      activeClinicId: string | null;
-      defaultClinicId: string | null;
-      role: string | null;
-      permissions: string[];
-      clinics: { id: string; name: string; role: string }[];
-      title?: string | null;
-    } & DefaultSession["user"];
-  }
-}
-
-export const { auth, handlers, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+export const authOptions: AuthOptions = {
+  pages: {
+    signIn: "/login",
+  },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -40,6 +23,14 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         const user = await prisma.user.findUnique({
           where: {
             email: credentials.email as string,
+          },
+          include: {
+            memberships: {
+              include: {
+                Clinic: true,
+                Role: true,
+              },
+            },
           },
         });
 
@@ -56,75 +47,77 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           return null;
         }
 
-        return user;
+        const activeClinicId = user.defaultClinicId;
+        const activeClinicMember = user.memberships.find(
+          (cm) => cm.clinicId === activeClinicId,
+        );
+        const role = activeClinicMember?.Role.name || "USER";
+        const permissions = ROLES[role as keyof typeof ROLES] || [];
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          title: user.title,
+          image: user.image,
+          permissions,
+          clinics: user.memberships.map((cm) => ({
+            ...cm.Clinic,
+            role: cm.Role.name,
+          })),
+          activeClinicId: user.defaultClinicId,
+          defaultClinicId: user.defaultClinicId,
+          role,
+        };
       },
     }),
   ],
-  secret: process.env.SECRET,
   session: {
     strategy: "jwt",
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      if (user || trigger === "update") {
-        const userId = user?.id || (token.id as string);
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId },
+      if (trigger === "update" && session?.activeClinicId) {
+        token.activeClinicId = session.activeClinicId;
+        const activeClinicMember = await prisma.clinicMember.findFirst({
+          where: {
+            userId: token.id,
+            clinicId: session.activeClinicId,
+          },
           include: {
-            memberships: {
-              include: {
-                clinic: true,
-                role: { include: { permissions: true } },
-              },
-            },
+            Role: true,
           },
         });
-
-        if (dbUser) {
-          token.id = dbUser.id;
-
-          // Determine active clinic:
-          // 1. If manual update, use session.activeClinicId
-          // 2. Else use dbUser.defaultClinicId
-          // 3. Else use first membership
-          let activeClinicId =
-            session?.activeClinicId || dbUser.defaultClinicId;
-
-          if (!activeClinicId && dbUser.memberships.length > 0) {
-            activeClinicId = dbUser.memberships[0].clinicId;
-          }
-
-          const activeMembership = dbUser.memberships.find(
-            (m) => m.clinicId === activeClinicId,
-          );
-
-          token.activeClinicId = activeClinicId;
-          token.defaultClinicId = dbUser.defaultClinicId;
-          token.title = dbUser.title;
-          token.role = activeMembership?.role?.name || null;
-          token.permissions =
-            activeMembership?.role?.permissions.map((p) => p.name) ?? [];
-          token.clinics = dbUser.memberships.map((m) => ({
-            id: m.clinic.id,
-            name: m.clinic.name,
-            role: m.role.name,
-          }));
+        if (activeClinicMember) {
+          token.role = activeClinicMember.Role.name;
+          token.permissions = ROLES[token.role as keyof typeof ROLES] || [];
         }
+      }
+
+      if (user) {
+        token.id = user.id;
+        token.title = user.title;
+        token.image = user.image;
+        token.permissions = user.permissions;
+        token.clinics = user.clinics;
+        token.activeClinicId = user.activeClinicId;
+        token.defaultClinicId = user.defaultClinicId;
+        token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
-      session.user.id = token.id as string;
-      session.user.activeClinicId = token.activeClinicId as string | null;
-      session.user.defaultClinicId = token.defaultClinicId as string | null;
-      session.user.role = token.role as string | null;
-      session.user.permissions = token.permissions as string[];
-      session.user.clinics = (token.clinics as any) || [];
-      session.user.title = token.title as string | null;
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.title = token.title;
+        session.user.image = token.image;
+        session.user.permissions = token.permissions;
+        session.user.clinics = token.clinics;
+        session.user.activeClinicId = token.activeClinicId;
+        session.user.defaultClinicId = token.defaultClinicId;
+        session.user.role = token.role;
+      }
       return session;
     },
   },
-  pages: {
-    signIn: "/login",
-  },
-});
+};

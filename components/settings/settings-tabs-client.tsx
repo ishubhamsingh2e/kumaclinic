@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryState } from "nuqs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SettingsTabsClientProps {
@@ -9,6 +8,7 @@ interface SettingsTabsClientProps {
   canManageUsers: boolean;
   clinicManagementContent: React.ReactNode;
   isManager: boolean;
+  integrationsContent: React.ReactNode;
 }
 
 export function SettingsTabsClient({
@@ -17,14 +17,10 @@ export function SettingsTabsClient({
   canManageUsers,
   clinicManagementContent,
   isManager,
+  integrationsContent,
 }: SettingsTabsClientProps) {
-  const [tab, setTab] = useQueryState("tab", {
-    defaultValue: "account",
-    shallow: false,
-  });
-
   return (
-    <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+    <Tabs value="account" className="space-y-4">
       <TabsList>
         <TabsTrigger value="account">Account</TabsTrigger>
         {isManager && (
@@ -33,6 +29,9 @@ export function SettingsTabsClient({
         {canManageUsers && (
           <TabsTrigger value="users">User Management</TabsTrigger>
         )}
+        {isManager && (
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        )}
       </TabsList>
       <TabsContent value="account">{accountContent}</TabsContent>
       {isManager && (
@@ -40,6 +39,9 @@ export function SettingsTabsClient({
       )}
       {canManageUsers && (
         <TabsContent value="users">{usersContent}</TabsContent>
+      )}
+      {isManager && (
+        <TabsContent value="integrations">{integrationsContent}</TabsContent>
       )}
     </Tabs>
   );

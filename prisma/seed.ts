@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 import { PERMISSIONS } from "../lib/permissions";
+import { ROLES } from "../lib/rbac";
 import bcrypt from "bcryptjs";
 import "dotenv/config";
-
 
 async function main() {
   // Create Permissions
@@ -17,56 +17,38 @@ async function main() {
   );
 
   // Create Roles and associate permissions
-  const superAdminRole = await prisma.role.upsert({
-    where: { name: "SUPER_ADMIN" },
-    update: {
-      permissions: {
-        set: [], // Clear existing relations to re-connect all
-        connect: permissions.map((p) => ({ id: p.id })),
+  for (const roleName in ROLES) {
+    const rolePermissions = ROLES[roleName as keyof typeof ROLES];
+    await prisma.role.upsert({
+      where: { name: roleName },
+      update: {
+        permissions: {
+          set: [], // Clear existing relations to re-connect all
+          connect: rolePermissions.map((p) => ({ name: p })),
+        },
       },
-    },
-    create: {
-      name: "SUPER_ADMIN",
-      permissions: { connect: permissions.map((p) => ({ id: p.id })) }, // Super admin gets all permissions
-    },
-  });
-
-  await prisma.role.upsert({
-    where: { name: "CLINIC_MANAGER" },
-    update: {},
-    create: {
-      name: "CLINIC_MANAGER",
-      permissions: {
-        connect: [
-          { name: PERMISSIONS.USER_MANAGE },
-          { name: PERMISSIONS.PATIENT_CREATE },
-          { name: PERMISSIONS.PATIENT_VIEW_ALL },
-        ],
+      create: {
+        name: roleName,
+        permissions: {
+          connect: rolePermissions.map((p) => ({ name: p })),
+        },
       },
-    },
-  });
+    });
+  }
 
-  await prisma.role.upsert({
-    where: { name: "DOCTOR" },
-    update: {},
-    create: {
-      name: "DOCTOR",
-      permissions: {
-        connect: [
-          { name: PERMISSIONS.PATIENT_CREATE },
-          { name: PERMISSIONS.PATIENT_VIEW_ALL },
-        ],
-      },
-    },
-  });
-
-  // Create a default super admin user if env vars are set
-  const adminEmail = process.env.SUPER_ADMIN_EMAIL;
-  const adminName = process.env.SUPER_ADMIN_NAME;
-  const adminPassword = process.env.SUPER_ADMIN_PASSWORD;
+  // Create a default admin user if env vars are set
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminName = process.env.ADMIN_NAME;
+  const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (adminEmail && adminName && adminPassword) {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const adminRole = await prisma.role.findUnique({
+      where: { name: "ADMIN" },
+    });
+    if (!adminRole) {
+      throw new Error("ADMIN role not found. Make sure to seed roles first.");
+    }
     const user = await prisma.user.upsert({
       where: { email: adminEmail },
       update: {},
@@ -74,6 +56,7 @@ async function main() {
         email: adminEmail,
         name: adminName,
         password: hashedPassword,
+        title: "Admin",
       },
     });
 
@@ -94,12 +77,12 @@ async function main() {
         },
       },
       update: {
-        roleId: superAdminRole.id,
+        roleId: adminRole.id,
       },
       create: {
         userId: user.id,
         clinicId: defaultClinic.id,
-        roleId: superAdminRole.id,
+        roleId: adminRole.id,
       },
     });
 
@@ -111,10 +94,10 @@ async function main() {
 }
 
 main()
-	.catch((e) => {
-		console.error(e);
-		process.exit(1);
-	})
-	.finally(async () => {
-		await prisma.$disconnect();
-	});
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

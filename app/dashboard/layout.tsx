@@ -1,8 +1,5 @@
-import { ClientSidebar } from "@/components/client-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { ClientSidebar } from "@/components/sidebar/client-sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export default function DashboardLayout({
   children,
@@ -12,9 +9,7 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <ClientSidebar />
-      <SidebarInset>
-        {children}
-      </SidebarInset>
+      <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );
 }

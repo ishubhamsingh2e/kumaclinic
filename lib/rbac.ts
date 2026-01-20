@@ -1,13 +1,61 @@
-import { auth } from "@/lib/auth";
 import { PERMISSIONS, Permission } from "@/lib/permissions";
+import { getServerSession, type AuthOptions } from "next-auth";
+import { authOptions } from "./auth";
+
+export const ROLES = {
+  ADMIN: [
+    PERMISSIONS.PATIENT_READ,
+    PERMISSIONS.PATIENT_CREATE,
+    PERMISSIONS.PATIENT_UPDATE,
+    PERMISSIONS.PATIENT_DELETE,
+    PERMISSIONS.APPOINTMENT_READ,
+    PERMISSIONS.APPOINTMENT_CREATE,
+    PERMISSIONS.APPOINTMENT_UPDATE,
+    PERMISSIONS.APPOINTMENT_DELETE,
+    PERMISSIONS.USER_READ,
+    PERMISSIONS.USER_CREATE,
+    PERMISSIONS.USER_UPDATE,
+    PERMISSIONS.USER_DELETE,
+    PERMISSIONS.ROLE_READ,
+    PERMISSIONS.ROLE_CREATE,
+    PERMISSIONS.ROLE_UPDATE,
+    PERMISSIONS.ROLE_DELETE,
+    PERMISSIONS.DASHBOARD_READ,
+  ],
+  DOCTOR: [
+    PERMISSIONS.PATIENT_READ,
+    PERMISSIONS.APPOINTMENT_READ,
+    PERMISSIONS.APPOINTMENT_UPDATE,
+    PERMISSIONS.DASHBOARD_READ,
+  ],
+  RECEPTIONIST: [
+    PERMISSIONS.PATIENT_READ,
+    PERMISSIONS.PATIENT_CREATE,
+    PERMISSIONS.PATIENT_UPDATE,
+    PERMISSIONS.APPOINTMENT_READ,
+    PERMISSIONS.APPOINTMENT_CREATE,
+    PERMISSIONS.APPOINTMENT_UPDATE,
+  ],
+
+  CLINIC_MANAGER: [
+    PERMISSIONS.PATIENT_READ,
+    PERMISSIONS.PATIENT_CREATE,
+    PERMISSIONS.PATIENT_UPDATE,
+    PERMISSIONS.APPOINTMENT_READ,
+    PERMISSIONS.APPOINTMENT_CREATE,
+    PERMISSIONS.APPOINTMENT_UPDATE,
+    PERMISSIONS.APPOINTMENT_DELETE,
+    PERMISSIONS.DASHBOARD_READ,
+  ],
+};
 
 export async function hasPermission(
-	permission: Permission | Permission[],
+  permission: Permission | Permission[],
 ): Promise<boolean> {
-	const session = await auth();
-	const userPermissions = session?.user?.permissions ?? [];
-	const requiredPermissions = Array.isArray(permission)
-		? permission
-		: [permission];
-	return requiredPermissions.every((p) => userPermissions.includes(p));
+  const session = await getServerSession(authOptions as AuthOptions);
+  const userPermissions = session?.user?.permissions ?? [];
+  const requiredPermissions = Array.isArray(permission)
+    ? permission
+    : [permission];
+  return requiredPermissions.every((p) => userPermissions.includes(p));
 }

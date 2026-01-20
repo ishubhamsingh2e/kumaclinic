@@ -1,15 +1,17 @@
+import { NotificationBell } from "./notification-bell";
 import { Separator } from "./ui/separator";
 import { SidebarTrigger } from "./ui/sidebar";
-import { NotificationBell } from "@/components/notification-bell";
 
 export interface DashboardViewProps {
   title?: string;
+  subtitle?: string;
   children: React.ReactNode;
   actions?: React.ReactNode;
 }
 
 export default function DashboardView({
   title,
+  subtitle,
   children,
   actions,
 }: DashboardViewProps) {
@@ -19,8 +21,13 @@ export default function DashboardView({
         <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <h1 className="text-lg">{title}</h1>
+            <Separator orientation="vertical" className="mr-2 h-4 my-auto" />
+            <div className="flex flex-col gap-0 leading-tight">
+              <h1 className="text-md font-semibold">{title}</h1>
+              {subtitle && (
+                <p className="text-sm text-muted-foreground">{subtitle}</p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />

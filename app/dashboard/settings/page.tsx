@@ -1,4 +1,3 @@
-import { auth } from "@/lib/auth";
 import { UserProfileForm } from "@/components/forms/user-profile-form";
 import { UserPasswordForm } from "@/components/forms/user-password-form";
 import { ConnectedAccounts } from "@/components/settings/connected-accounts";
@@ -14,11 +13,45 @@ import { redirect } from "next/navigation";
 import { hasPermission } from "@/lib/rbac";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/db";
-import { getPendingInvitations } from "@/lib/actions/clinic";
-import { UserManagementClient } from "@/components/admin/user-management-client";
-import DashboardView from "@/components/dashboard-view";
 import { SettingsTabsClient } from "@/components/settings/settings-tabs-client";
 import { ClinicManagementTab } from "@/components/settings/clinic-management-tab";
+import { IntegrationsTab } from "@/components/settings/integrations-tab";
+import { DoctorAvailabilityManager } from "@/components/settings/doctor-availability-manager";
+import DashboardView from "@/components/dashboard-view";
+import { getClinicSettings } from "@/lib/actions/clinicSettings";
+import { Role, Invitation, Clinic } from "@prisma/client";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import type { User as PrismaUser } from "@prisma/client";
+
+type UserWithMappedFields = PrismaUser & {
+  role:
+    | (Role & {
+        permissions: { name: string; id: string; description: string | null }[];
+      })
+    | null;
+  roleId: string | null;
+  status: "ACTIVE";
+  memberships: Array<{
+    id: string;
+    userId: string;
+    clinicId: string;
+    roleId: string;
+    createdAt: Date;
+    updatedAt: Date;
+    Role: Role & {
+      permissions: { name: string; id: string; description: string | null }[];
+    };
+  }>;
+};
+
+type InvitationWithRelations = Invitation & {
+  Role: Role & {
+    permissions: { id: string; name: string; description: string | null }[];
+  };
+  User: PrismaUser;
+  Clinic: Clinic;
+};
 
 async function getUsers(activeClinicId: string) {
   const users = await prisma.user.findMany({
@@ -35,7 +68,7 @@ async function getUsers(activeClinicId: string) {
           clinicId: activeClinicId,
         },
         include: {
-          role: {
+          Role: {
             include: {
               permissions: true,
             },
@@ -47,7 +80,7 @@ async function getUsers(activeClinicId: string) {
 
   return users.map((u) => ({
     ...u,
-    role: u.memberships[0]?.role || null,
+    role: u.memberships[0]?.Role || null,
     roleId: u.memberships[0]?.roleId || null,
     status: "ACTIVE" as const,
   }));
@@ -57,21 +90,72 @@ async function getRoles() {
   return prisma.role.findMany({
     where: {
       name: {
-        not: "SUPER_ADMIN",
+        not: "ADMIN",
       },
     },
   });
 }
 
+async function getPendingInvitations() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.activeClinicId) {
+    return [];
+  }
+
+  return prisma.invitation.findMany({
+    where: {
+      clinicId: session.user.activeClinicId,
+      status: "PENDING",
+    },
+    include: {
+      Role: {
+        include: {
+          permissions: true,
+        },
+      },
+      User: true,
+      Clinic: true,
+    },
+  });
+}
+
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
   if (!session?.user) {
     redirect("/login");
   }
 
+  const activeClinicId = session.user.activeClinicId;
+
+  if (!activeClinicId) {
+    return (
+      <DashboardView title="Settings">
+        <p>No active clinic selected.</p>
+      </DashboardView>
+    );
+  }
+
+  const clinic = await prisma.clinic.findUnique({
+    where: { id: activeClinicId },
+    include: {
+      ClinicLocation: true,
+    },
+  });
+
+  if (!clinic) {
+    return (
+      <DashboardView title="Settings">
+        <p>Clinic not found.</p>
+      </DashboardView>
+    );
+  }
+
+  const { settings: clinicSettings } = await getClinicSettings({
+    clinicId: activeClinicId,
+  });
+
   const isManager =
-    session.user.role === "CLINIC_MANAGER" ||
-    session.user.role === "SUPER_ADMIN";
+    session.user.role === "CLINIC_MANAGER" || session.user.role === "ADMIN";
 
   const [dbUser, canManageUsers] = await Promise.all([
     prisma.user.findUnique({
@@ -93,25 +177,20 @@ export default async function SettingsPage() {
     permissions: session.user.permissions,
   };
 
-  let users: any[] = [];
-  let roles: any[] = [];
-  let invitations: any[] = [];
-  let ownerId: string | null = null;
+  let users: UserWithMappedFields[] = [];
+  let roles: Role[] = [];
+  let invitations: InvitationWithRelations[] = [];
+  const ownerId: string | null = clinic.ownerId;
 
   if (canManageUsers && user.activeClinicId) {
-    const [usersData, rolesData, invitationsData, clinicData] =
-      await Promise.all([
-        getUsers(user.activeClinicId),
-        getRoles(),
-        getPendingInvitations(),
-        prisma.clinic.findUnique({
-          where: { id: user.activeClinicId },
-        }),
-      ]);
+    const [usersData, rolesData, invitationsData] = await Promise.all([
+      getUsers(user.activeClinicId),
+      getRoles(),
+      getPendingInvitations(),
+    ]);
     users = usersData;
     roles = rolesData;
     invitations = invitationsData;
-    ownerId = clinicData?.ownerId || null;
   }
 
   const accountContent = (
@@ -126,9 +205,25 @@ export default async function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UserProfileForm user={user} />
+            <UserProfileForm
+              user={user}
+              slotDuration={clinicSettings?.slotDurationInMin}
+            />
           </CardContent>
         </Card>
+        {user.title === "Dr." && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Doctor Availability</CardTitle>
+              <CardDescription>
+                Set your availability for each clinic you are a member of.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DoctorAvailabilityManager />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -164,26 +259,34 @@ export default async function SettingsPage() {
     </div>
   );
 
-  const usersContent = (
+  const usersContent = canManageUsers ? (
     <div className="space-y-4">
-      <UserManagementClient
-        users={users}
-        roles={roles}
-        ownerId={ownerId}
-        invitations={invitations.map((i) => ({
-          id: i.id,
-          email: i.email,
-          role: i.role,
-          roleId: i.roleId,
-          status: "PENDING" as const,
-          name: "Pending Invitation",
-          image: null,
-        }))}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle>User Management</CardTitle>
+          <CardDescription>
+            Manage users and roles for your clinic.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Total Users: {users.length}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Pending Invitations: {invitations.length}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
+  ) : null;
+
+  const clinicManagementContent = (
+    <ClinicManagementTab clinic={clinic} settings={clinicSettings ?? null} />
   );
 
-  const clinicManagementContent = <ClinicManagementTab />;
+  const integrationsContent = <IntegrationsTab />;
 
   return (
     <DashboardView title="Settings">
@@ -193,6 +296,7 @@ export default async function SettingsPage() {
         canManageUsers={canManageUsers}
         clinicManagementContent={clinicManagementContent}
         isManager={isManager}
+        integrationsContent={integrationsContent}
       />
     </DashboardView>
   );
