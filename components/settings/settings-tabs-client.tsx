@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SettingsTabsClientProps {
@@ -19,8 +20,10 @@ export function SettingsTabsClient({
   isManager,
   integrationsContent,
 }: SettingsTabsClientProps) {
+  const [activeTab, setActiveTab] = useState("account");
+
   return (
-    <Tabs value="account" className="space-y-4">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <TabsList>
         <TabsTrigger value="account">Account</TabsTrigger>
         {isManager && (
