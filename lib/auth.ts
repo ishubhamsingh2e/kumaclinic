@@ -3,12 +3,20 @@ import { AuthOptions } from "next-auth";
 import { prisma } from "./db";
 import { ROLES } from "./rbac";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 
 export const authOptions: AuthOptions = {
+  adapter: PrismaAdapter(prisma) as any,
   pages: {
     signIn: "/login",
   },
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      allowDangerousEmailAccountLinking: true,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
