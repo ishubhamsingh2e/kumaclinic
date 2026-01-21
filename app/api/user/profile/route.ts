@@ -11,8 +11,17 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, name, email, phone, dob, address, licenseNumber, image } =
-      body;
+    const {
+      title,
+      name,
+      email,
+      phone,
+      dob,
+      address,
+      licenseNumber,
+      image,
+      slotDurationInMin,
+    } = body;
 
     // Check if email is already taken by another user
     if (email && email !== session.user.email) {
@@ -38,6 +47,10 @@ export async function PATCH(req: NextRequest) {
     if (address !== undefined) updateData.address = address;
     if (licenseNumber !== undefined) updateData.licenseNumber = licenseNumber;
     if (image !== undefined) updateData.image = image;
+    if (slotDurationInMin !== undefined)
+      updateData.slotDurationInMin = slotDurationInMin
+        ? parseInt(slotDurationInMin)
+        : null;
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },

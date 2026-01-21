@@ -78,7 +78,7 @@ export function ConnectedAccounts() {
   const handleDisconnect = async (accountId: string, providerName: string) => {
     if (
       !confirm(
-        `Are you sure you want to disconnect your ${providerName} account?`
+        `Are you sure you want to disconnect your ${providerName} account?`,
       )
     ) {
       return;

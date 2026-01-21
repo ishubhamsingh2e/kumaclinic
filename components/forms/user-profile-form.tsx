@@ -36,12 +36,12 @@ interface UserProfileFormProps {
     dob?: Date | string | null;
     address?: string | null;
     licenseNumber?: string | null;
+    slotDurationInMin?: number | null;
     role?: string | null;
   };
-  slotDuration?: number | null;
 }
 
-export function UserProfileForm({ user, slotDuration }: UserProfileFormProps) {
+export function UserProfileForm({ user }: UserProfileFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [date, setDate] = useState<Date | undefined>(
@@ -56,6 +56,7 @@ export function UserProfileForm({ user, slotDuration }: UserProfileFormProps) {
     phone: user.phone || "",
     address: user.address || "",
     licenseNumber: user.licenseNumber || "",
+    slotDurationInMin: user.slotDurationInMin?.toString() || "30",
   });
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(
@@ -88,6 +89,8 @@ export function UserProfileForm({ user, slotDuration }: UserProfileFormProps) {
     formData.phone !== (user.phone || "") ||
     formData.address !== (user.address || "") ||
     formData.licenseNumber !== (user.licenseNumber || "") ||
+    formData.slotDurationInMin !==
+      (user.slotDurationInMin?.toString() || "30") ||
     date?.getTime() !== (user.dob ? new Date(user.dob).getTime() : undefined) ||
     imageFile !== null;
 
@@ -290,14 +293,21 @@ export function UserProfileForm({ user, slotDuration }: UserProfileFormProps) {
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label>Slot Duration (minutes)</Label>
+                  <Label htmlFor="slotDuration">Slot Duration (minutes)</Label>
                   <Input
-                    value={slotDuration || ""}
-                    readOnly
-                    className="border-dashed"
+                    id="slotDuration"
+                    name="slotDurationInMin"
+                    type="number"
+                    min="5"
+                    max="120"
+                    value={formData.slotDurationInMin}
+                    onChange={(e) =>
+                      handleChange("slotDurationInMin", e.target.value)
+                    }
+                    placeholder="30"
                   />
                   <p className="text-xs text-muted-foreground">
-                    This is the default for the active clinic.
+                    Duration of each appointment slot in minutes (default: 30).
                   </p>
                 </div>
               </>

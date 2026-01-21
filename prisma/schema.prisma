@@ -236,6 +236,7 @@ model User {
   phone                String?
   signatureUrl         String?
   title                String?
+  slotDurationInMin    Int?                  @default(30)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   Account              Account[]

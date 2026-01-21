@@ -160,6 +160,18 @@ export default async function SettingsPage() {
   const [dbUser, canManageUsers] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        image: true,
+        title: true,
+        phone: true,
+        dob: true,
+        address: true,
+        licenseNumber: true,
+        slotDurationInMin: true,
+      },
     }),
     hasPermission(PERMISSIONS.USER_MANAGE),
   ]);
@@ -205,10 +217,7 @@ export default async function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UserProfileForm
-              user={user}
-              slotDuration={clinicSettings?.slotDurationInMin}
-            />
+            <UserProfileForm user={user} />
           </CardContent>
         </Card>
         {user.title === "Dr." && (
@@ -220,7 +229,9 @@ export default async function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <DoctorAvailabilityManager />
+              <DoctorAvailabilityManager
+                slotDuration={user.slotDurationInMin || 30}
+              />
             </CardContent>
           </Card>
         )}

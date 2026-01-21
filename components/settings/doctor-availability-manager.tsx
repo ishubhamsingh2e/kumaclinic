@@ -1,23 +1,31 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
-import { ChevronsUpDown } from "lucide-react";
 import { Clinic, DoctorAvailability } from "@prisma/client";
 import { DoctorAvailabilityForm } from "../forms/doctor-availability-form";
 import { getDoctorClinics } from "@/lib/actions/doctor";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 type ClinicWithAvailability = Clinic & {
   DoctorAvailability: DoctorAvailability[];
 };
 
-export function DoctorAvailabilityManager() {
+interface DoctorAvailabilityManagerProps {
+  slotDuration?: number;
+}
+
+export function DoctorAvailabilityManager({
+  slotDuration = 30,
+}: DoctorAvailabilityManagerProps) {
   const [clinics, setClinics] = useState<ClinicWithAvailability[]>([]);
+  const [selectedClinicId, setSelectedClinicId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,6 +35,9 @@ export function DoctorAvailabilityManager() {
         setError(result.error);
       } else if (result.clinics) {
         setClinics(result.clinics);
+        if (result.clinics.length > 0) {
+          setSelectedClinicId(result.clinics[0].id);
+        }
       }
     }
     fetchClinics();
@@ -40,27 +51,35 @@ export function DoctorAvailabilityManager() {
     return <p>You are not a member of any clinics.</p>;
   }
 
+  const selectedClinic = clinics.find((c) => c.id === selectedClinicId);
+
   return (
     <div className="space-y-4">
-      {clinics.map((clinic) => (
-        <Collapsible key={clinic.id} className="space-y-2">
-          <div className="flex items-center justify-between space-x-4 px-4">
-            <h4 className="text-sm font-semibold">{clinic.name}</h4>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="w-9 p-0">
-                <ChevronsUpDown className="h-4 w-4" />
-                <span className="sr-only">Toggle</span>
-              </Button>
-            </CollapsibleTrigger>
-          </div>
-          <CollapsibleContent className="space-y-2 p-4">
-            <DoctorAvailabilityForm
-              clinicId={clinic.id}
-              availability={clinic.DoctorAvailability}
-            />
-          </CollapsibleContent>
-        </Collapsible>
-      ))}
+      <div className="flex items-center gap-4">
+        <Label htmlFor="clinic-select" className="min-w-25">
+          Select Clinic:
+        </Label>
+        <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
+          <SelectTrigger id="clinic-select" className="w-full max-w-md">
+            <SelectValue placeholder="Select a clinic" />
+          </SelectTrigger>
+          <SelectContent>
+            {clinics.map((clinic) => (
+              <SelectItem key={clinic.id} value={clinic.id}>
+                {clinic.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {selectedClinic && (
+        <DoctorAvailabilityForm
+          clinicId={selectedClinic.id}
+          availability={selectedClinic.DoctorAvailability}
+          slotDuration={slotDuration}
+        />
+      )}
     </div>
   );
 }
