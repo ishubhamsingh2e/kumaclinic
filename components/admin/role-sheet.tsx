@@ -65,7 +65,7 @@ export function RoleSheet({
     setSelectedPermissions((prev) =>
       prev.includes(permissionId)
         ? prev.filter((id) => id !== permissionId)
-        : [...prev, permissionId]
+        : [...prev, permissionId],
     );
   };
 
@@ -131,8 +131,8 @@ export function RoleSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[600px] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
+      <SheetContent className="sm:max-w-[600px] overflow-y-auto h-full">
+        <form className="h-full flex flex-col" onSubmit={handleSubmit}>
           <SheetHeader>
             <SheetTitle>
               {mode === "create" ? "Create New Role" : "Edit Role"}
@@ -144,7 +144,7 @@ export function RoleSheet({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="py-6 space-y-6">
+          <div className="py-6 space-y-6 p-4 flex flex-col h-full overflow-y-auto">
             <div className="space-y-2">
               <Label htmlFor="role-name">Role Name</Label>
               <Input
@@ -200,7 +200,7 @@ export function RoleSheet({
             </div>
           </div>
 
-          <SheetFooter>
+          <SheetFooter className="grid grid-cols-2 gap-2 p-4">
             <Button
               type="button"
               variant="outline"
@@ -213,8 +213,8 @@ export function RoleSheet({
               {isSubmitting
                 ? "Processing..."
                 : mode === "create"
-                ? "Create Role"
-                : "Update Role"}
+                  ? "Create Role"
+                  : "Update Role"}
             </Button>
           </SheetFooter>
         </form>
