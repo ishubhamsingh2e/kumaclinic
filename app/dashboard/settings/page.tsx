@@ -235,15 +235,6 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
         )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Connected Accounts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ConnectedAccounts />
-          </CardContent>
-        </Card>
       </div>
 
       {/* Side Column */}
@@ -264,6 +255,15 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent>
             <NotificationSettings />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Connected Accounts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ConnectedAccounts />
           </CardContent>
         </Card>
       </div>
