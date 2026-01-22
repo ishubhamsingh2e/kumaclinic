@@ -24,6 +24,16 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "../ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UserProfileFormProps {
   user: {
@@ -47,6 +57,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
   const [date, setDate] = useState<Date | undefined>(
     user.dob ? new Date(user.dob) : undefined,
   );
+  const [showSlotDurationAlert, setShowSlotDurationAlert] = useState(false);
 
   // Local state for other fields to track changes
   const [formData, setFormData] = useState({
@@ -95,9 +106,23 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
     imageFile !== null;
 
   const isDoctor = formData.title === "Dr.";
+  
+  const isSlotDurationChanged = 
+    formData.slotDurationInMin !== (user.slotDurationInMin?.toString() || "30");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if slot duration changed for doctors
+    if (isDoctor && isSlotDurationChanged) {
+      setShowSlotDurationAlert(true);
+      return;
+    }
+    
+    await submitForm();
+  };
+
+  const submitForm = async () => {
     setIsSubmitting(true);
 
     try {
@@ -151,6 +176,15 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const confirmSlotDurationChange = async () => {
+    setShowSlotDurationAlert(false);
+    await submitForm();
+  };
+
+  const cancelSlotDurationChange = () => {
+    setShowSlotDurationAlert(false);
   };
 
   return (
@@ -332,6 +366,30 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
           </div>
         </div>
       </form>
+
+      {/* Slot Duration Change Alert Dialog */}
+      <AlertDialog open={showSlotDurationAlert} onOpenChange={setShowSlotDurationAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Slot Duration?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Changing the slot duration will reset all your availability slots. 
+              All your currently set appointment slots will be cleared and you'll need to 
+              set them up again based on the new slot duration.
+              <br /><br />
+              <strong>Are you sure you want to continue?</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelSlotDurationChange}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSlotDurationChange}>
+              Yes, Change Duration
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

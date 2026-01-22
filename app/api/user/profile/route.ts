@@ -37,6 +37,16 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    // Check if slot duration is changing
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { slotDurationInMin: true },
+    });
+
+    const isSlotDurationChanging =
+      slotDurationInMin !== undefined &&
+      parseInt(slotDurationInMin) !== currentUser?.slotDurationInMin;
+
     // Update user profile
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
@@ -57,9 +67,18 @@ export async function PATCH(req: NextRequest) {
       data: updateData,
     });
 
+    // If slot duration changed, delete all doctor availability slots
+    if (isSlotDurationChanging) {
+      await prisma.doctorAvailability.deleteMany({
+        where: { doctorId: session.user.id },
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Profile updated successfully",
+      message: isSlotDurationChanging
+        ? "Profile updated and availability slots reset"
+        : "Profile updated successfully",
       user: updatedUser,
     });
   } catch (error) {

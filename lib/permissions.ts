@@ -29,6 +29,12 @@ export const PERMISSIONS = {
   // Clinic
   CLINIC_UPDATE: "clinic:update",
 
+  // Team
+  TEAM_READ: "team:read",
+  TEAM_INVITE: "team:invite",
+  TEAM_MANAGE: "team:manage",
+  TEAM_TRANSFER_OWNERSHIP: "team:transfer_ownership",
+
   // Special Permissions
   USER_MANAGE: "user:manage",
 } as const;

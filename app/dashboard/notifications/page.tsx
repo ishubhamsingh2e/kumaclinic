@@ -72,7 +72,7 @@ export default async function NotificationsPage() {
         ) : (
           notifications.map((notification) => {
             const canAction =
-              notification.type === "INVITE_RECEIVED" &&
+              (notification.type === "INVITE_RECEIVED" || notification.type === "INVITATION") &&
               !!notification.referenceId && // Ensure referenceId is truthy (not null)
               pendingInvitationIds.has(notification.referenceId as string); // Cast to string after null check
 

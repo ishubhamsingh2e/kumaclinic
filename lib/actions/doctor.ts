@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { authOptions } from "../auth";
+import { checkAvailabilityConflicts } from "../availability-conflict";
 
 export async function getDoctorClinics() {
   const session = await getServerSession(authOptions);
@@ -59,6 +60,34 @@ export async function updateDoctorAvailability(payload: unknown) {
   }
 
   const { clinicId, availability } = validatedFields.data;
+
+  // Check for conflicts with other clinics
+  const conflictCheck = await checkAvailabilityConflicts(
+    session.user.id,
+    clinicId,
+    availability
+  );
+
+  if (conflictCheck.hasConflict) {
+    const conflictMessages = conflictCheck.conflicts.map((conflict) => {
+      const dayName = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ][conflict.dayOfWeek];
+      return `${dayName} ${conflict.startTime}-${conflict.endTime} (${conflict.clinicName})`;
+    });
+
+    return {
+      error: "Time slot conflicts detected",
+      conflicts: conflictMessages,
+      message: `These time slots overlap with your availability in other clinics: ${conflictMessages.join(", ")}`,
+    };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {

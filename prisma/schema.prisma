@@ -48,34 +48,36 @@ model Booking {
 }
 
 model Clinic {
-  id                 String               @id @default(cuid())
-  name               String
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  bio                String?
-  coverImage         String?
-  email              String?
-  googleReviewsUrl   String?
-  isPublished        Boolean              @default(false)
-  ownerId            String?
-  phone              String?
-  profileImage       String?
-  slug               String?              @unique
-  whatsapp           String?
-  instagram          String?
-  facebook           String?
-  twitter            String?
-  linkedin           String?
-  showOwnerInfo      Boolean              @default(true)
-  ownerFieldsToShow  Json?
-  ApiKey             ApiKey[]
-  Booking            Booking[]
-  User               User?                @relation(fields: [ownerId], references: [id])
-  ClinicLocation     ClinicLocation[]
-  ClinicMember       ClinicMember[]
-  ClinicSettings     ClinicSettings?
-  DoctorAvailability DoctorAvailability[]
-  Invitation         Invitation[]
+  id                   String                 @id @default(cuid())
+  name                 String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  bio                  String?
+  coverImage           String?
+  email                String?
+  googleReviewsUrl     String?
+  isPublished          Boolean                @default(false)
+  ownerId              String?
+  phone                String?
+  profileImage         String?
+  slug                 String?                @unique
+  whatsapp             String?
+  instagram            String?
+  facebook             String?
+  twitter              String?
+  linkedin             String?
+  showOwnerInfo        Boolean                @default(true)
+  ownerFieldsToShow    Json?
+  ApiKey               ApiKey[]
+  Booking              Booking[]
+  User                 User?                  @relation(fields: [ownerId], references: [id])
+  ClinicLocation       ClinicLocation[]
+  ClinicMember         ClinicMember[]
+  ClinicSettings       ClinicSettings?
+  DoctorAvailability   DoctorAvailability[]
+  DoctorWeeklyOffDay   DoctorWeeklyOffDay[]
+  DoctorSpecificOffDay DoctorSpecificOffDay[]
+  Invitation           Invitation[]
 }
 
 model ClinicLocation {
@@ -128,7 +130,37 @@ model DoctorAvailability {
   Clinic    Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   User      User   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
+  @@index([doctorId, clinicId, dayOfWeek])
+}
+
+model DoctorWeeklyOffDay {
+  id        String @id @default(cuid())
+  doctorId  String
+  clinicId  String
+  dayOfWeek Int    // 0-6 (Sunday-Saturday)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Clinic    Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  User      User   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
   @@unique([doctorId, clinicId, dayOfWeek])
+  @@index([doctorId, clinicId])
+}
+
+model DoctorSpecificOffDay {
+  id        String   @id @default(cuid())
+  doctorId  String
+  clinicId  String
+  date      DateTime // Specific date (time will be set to 00:00:00)
+  reason    String?  // Optional reason (e.g., "Vacation", "Holiday", "Personal")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, clinicId, date])
+  @@index([doctorId, clinicId])
+  @@index([date])
 }
 
 model Invitation {
@@ -252,6 +284,8 @@ model User {
   Clinic               Clinic[]
   memberships          ClinicMember[]        @relation("memberships")
   DoctorAvailability   DoctorAvailability[]
+  DoctorWeeklyOffDay   DoctorWeeklyOffDay[]
+  DoctorSpecificOffDay DoctorSpecificOffDay[]
   Invitation           Invitation[]
   Notification         Notification[]
   NotificationSettings NotificationSettings?

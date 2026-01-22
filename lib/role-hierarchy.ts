@@ -12,9 +12,9 @@ export async function getRolePriority(roleId: string): Promise<number> {
 }
 
 /**
- * Check if userRole has higher or equal priority than targetRole
+ * Check if userRole has higher priority than targetRole
  * Higher priority number = higher rank
- * Returns true if userRole >= targetRole priority
+ * Returns true if userRole > targetRole priority (strictly greater)
  */
 export async function canManageRole(
   userRoleId: string,
@@ -25,7 +25,7 @@ export async function canManageRole(
     getRolePriority(targetRoleId),
   ]);
 
-  return userPriority >= targetPriority;
+  return userPriority > targetPriority;
 }
 
 /**
@@ -69,5 +69,5 @@ export async function canManageUser(
     return false;
   }
 
-  return actorPriority >= targetPriority;
+  return actorPriority > targetPriority;
 }
