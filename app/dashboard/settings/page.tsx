@@ -128,10 +128,97 @@ export default async function SettingsPage() {
 
   const activeClinicId = session.user.activeClinicId;
 
+  // Fetch user profile first (always needed for account tab)
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      title: true,
+      phone: true,
+      dob: true,
+      address: true,
+      licenseNumber: true,
+      slotDurationInMin: true,
+    },
+  });
+
+  if (!dbUser) {
+    redirect("/login");
+  }
+
+  // Combine session user with dbUser for account content
+  const user = {
+    ...dbUser,
+    activeClinicId: session.user.activeClinicId,
+    role: session.user.role,
+    permissions: session.user.permissions,
+  };
+
+  // If no active clinic, show only account tab
   if (!activeClinicId) {
+    const accountContent = (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Main Profile Column */}
+        <div className="space-y-6 md:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>
+                This is how others will see you on the site.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserProfileForm user={user} />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Side Column */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Password</CardTitle>
+              <CardDescription>Update your account password.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UserPasswordForm />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notifications</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <NotificationSettings />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Connected Accounts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ConnectedAccounts />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+
     return (
       <DashboardView title="Settings">
-        <p>No active clinic selected.</p>
+        <SettingsTabsClient
+          accountContent={accountContent}
+          usersContent={null}
+          canManageUsers={false}
+          clinicManagementContent={null}
+          isManager={false}
+          integrationsContent={null}
+        />
       </DashboardView>
     );
   }
@@ -158,37 +245,7 @@ export default async function SettingsPage() {
   const isManager =
     session.user.role === "CLINIC_MANAGER" || session.user.role === "ADMIN";
 
-  const [dbUser, canManageUsers] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        title: true,
-        phone: true,
-        dob: true,
-        address: true,
-        licenseNumber: true,
-        slotDurationInMin: true,
-      },
-    }),
-    hasPermission(PERMISSIONS.USER_MANAGE),
-  ]);
-
-  if (!dbUser) {
-    redirect("/login");
-  }
-
-  // Combine session user (which has the role, permissions, and activeClinicId)
-  // with dbUser (which has the profile fields)
-  const user = {
-    ...dbUser,
-    activeClinicId: session.user.activeClinicId,
-    role: session.user.role,
-    permissions: session.user.permissions,
-  };
+  const canManageUsers = await hasPermission(PERMISSIONS.USER_MANAGE);
 
   let users: UserWithMappedFields[] = [];
   let roles: Role[] = [];
