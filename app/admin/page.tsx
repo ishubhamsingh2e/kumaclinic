@@ -92,6 +92,15 @@ export default async function AdminPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <a
+              href="/admin/logs"
+              className="block rounded-lg border p-3 hover:bg-accent"
+            >
+              <div className="font-medium">View System Logs</div>
+              <div className="text-sm text-muted-foreground">
+                Access logs, error logs, and audit trails
+              </div>
+            </a>
+            <a
               href="/admin/users"
               className="block rounded-lg border p-3 hover:bg-accent"
             >

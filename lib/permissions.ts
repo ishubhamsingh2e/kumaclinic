@@ -37,6 +37,7 @@ export const PERMISSIONS = {
 
   // Special Permissions
   USER_MANAGE: "user:manage",
+  SYSTEM_ADMIN: "system:admin",
   
   // Role Identifiers
   IS_DOCTOR: "role:doctor",

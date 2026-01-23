@@ -287,6 +287,7 @@ model User {
   Invitation           Invitation[]
   Notification         Notification[]
   NotificationSettings NotificationSettings?
+  Log                  Log[]
   Session              Session[]
 
   @@index([defaultClinicId])
@@ -330,4 +331,41 @@ enum BookingStatus {
   CANCELLED
   COMPLETED
   NO_SHOW
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  level     LogLevel @default(INFO)
+  type      LogType  @default(SYSTEM)
+  message   String
+  metadata  Json?
+  userId    String?
+  ip        String?
+  userAgent String?
+  path      String?
+  method    String?
+  statusCode Int?
+  duration  Int?     // in milliseconds
+  createdAt DateTime @default(now())
+  User      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([level, type, createdAt])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum LogLevel {
+  ERROR
+  WARN
+  INFO
+  DEBUG
+}
+
+enum LogType {
+  ACCESS
+  ERROR
+  AUDIT
+  SYSTEM
+  EMAIL
+  AUTH
 }

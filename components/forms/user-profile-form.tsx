@@ -106,19 +106,19 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
     imageFile !== null;
 
   const isDoctor = formData.title === "Dr.";
-  
-  const isSlotDurationChanged = 
+
+  const isSlotDurationChanged =
     formData.slotDurationInMin !== (user.slotDurationInMin?.toString() || "30");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Check if slot duration changed for doctors
     if (isDoctor && isSlotDurationChanged) {
       setShowSlotDurationAlert(true);
       return;
     }
-    
+
     await submitForm();
   };
 
@@ -164,10 +164,10 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       }
 
       toast.success(data.message || "Profile updated successfully");
-      
+
       // Refresh the page to show updated data
       router.refresh();
-      
+
       // Reset image file state
       setImageFile(null);
     } catch (error: any) {
@@ -303,10 +303,7 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
                     mode="single"
                     selected={date}
                     onSelect={setDate}
-                    initialFocus
                     captionLayout="dropdown"
-                    fromYear={1900}
-                    toYear={new Date().getFullYear()}
                   />
                 </PopoverContent>
               </Popover>
@@ -368,15 +365,19 @@ export function UserProfileForm({ user }: UserProfileFormProps) {
       </form>
 
       {/* Slot Duration Change Alert Dialog */}
-      <AlertDialog open={showSlotDurationAlert} onOpenChange={setShowSlotDurationAlert}>
+      <AlertDialog
+        open={showSlotDurationAlert}
+        onOpenChange={setShowSlotDurationAlert}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Change Slot Duration?</AlertDialogTitle>
             <AlertDialogDescription>
-              Changing the slot duration will reset all your availability slots. 
-              All your currently set appointment slots will be cleared and you'll need to 
-              set them up again based on the new slot duration.
-              <br /><br />
+              Changing the slot duration will reset all your availability slots.
+              All your currently set appointment slots will be cleared and
+              you'll need to set them up again based on the new slot duration.
+              <br />
+              <br />
               <strong>Are you sure you want to continue?</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>

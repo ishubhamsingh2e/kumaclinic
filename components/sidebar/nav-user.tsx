@@ -9,6 +9,7 @@ import {
   Shield,
   Users,
   LockKeyhole,
+  ScrollText,
 } from "lucide-react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
@@ -128,6 +129,14 @@ export function NavUser({
                       <Link href="/admin/roles">
                         <LockKeyhole />
                         Roles & Permissions
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {canReadUsers && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/logs">
+                        <ScrollText />
+                        System Logs
                       </Link>
                     </DropdownMenuItem>
                   )}

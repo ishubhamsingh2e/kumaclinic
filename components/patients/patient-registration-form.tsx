@@ -342,7 +342,7 @@ const PatientRegistrationForm = forwardRef<HTMLFormElement>((props, ref) => {
                       disabled={(date) =>
                         date > new Date() || date < new Date("1900-01-01")
                       }
-                      initialFocus
+                      captionLayout="dropdown"
                     />
                   </PopoverContent>
                 </Popover>
