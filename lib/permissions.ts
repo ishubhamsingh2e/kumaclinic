@@ -37,6 +37,9 @@ export const PERMISSIONS = {
 
   // Special Permissions
   USER_MANAGE: "user:manage",
+  
+  // Role Identifiers
+  IS_DOCTOR: "role:doctor",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

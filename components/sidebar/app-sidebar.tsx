@@ -4,7 +4,7 @@ import * as React from "react";
 import { useSession } from "next-auth/react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions";
-import { LayoutDashboard, User, Calendar } from "lucide-react";
+import { LayoutDashboard, User, Calendar, CalendarCheck } from "lucide-react";
 
 import { NavMain } from "@/components/sidebar/nav-main";
 import { NavSecondary } from "@/components/sidebar/nav-secondary";
@@ -33,6 +33,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/dashboard/patients",
       icon: User,
       permission: PERMISSIONS.PATIENT_READ,
+    },
+    {
+      title: "Appointments",
+      url: "/dashboard/appointments",
+      icon: CalendarCheck,
+      permission: PERMISSIONS.APPOINTMENT_READ,
     },
     {
       title: "Calendar",

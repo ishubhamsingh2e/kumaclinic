@@ -1,6 +1,12 @@
 "use client";
 
-import { CSSProperties, useEffect, useMemo, useState, useCallback } from "react";
+import {
+  CSSProperties,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 import { RiCalendarLine, RiDeleteBinLine } from "@remixicon/react";
 import { format, isBefore } from "date-fns";
 
@@ -15,13 +21,13 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -141,8 +147,7 @@ export function EventDialog({
       const [startHours = 0, startMinutes = 0] = startTime
         .split(":")
         .map(Number);
-      const [endHours = 0, endMinutes = 0] = endTime.split(":")
-        .map(Number);
+      const [endHours = 0, endMinutes = 0] = endTime.split(":").map(Number);
 
       if (
         startHours < StartHour ||
@@ -191,22 +196,22 @@ export function EventDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
-          <DialogTitle>{event?.id ? "Edit Event" : "Create Event"}</DialogTitle>
-          <DialogDescription className="sr-only">
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="w-full sm:min-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>{event?.id ? "Edit Event" : "Create Event"}</SheetTitle>
+          <SheetDescription className="sr-only">
             {event?.id
               ? "Edit the details of this event"
               : "Add a new event to your calendar"}
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         {error && (
           <div className="bg-destructive/15 text-destructive rounded-md px-3 py-2 text-sm">
             {error}
           </div>
         )}
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 p-4">
           <div className="*:not-first:mt-1.5">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -397,6 +402,8 @@ export function EventDialog({
                     {
                       "--background": eventColors[colorName].background,
                       "--foreground": eventColors[colorName].foreground,
+                      backgroundColor: eventColors[colorName].background,
+                      borderColor: eventColors[colorName].foreground,
                     } as CSSProperties
                   }
                 />
@@ -404,7 +411,7 @@ export function EventDialog({
             </RadioGroup>
           </fieldset>
         </div>
-        <DialogFooter className="flex-row sm:justify-between">
+        <SheetFooter className="flex-row sm:justify-between">
           {event?.id && (
             <Button
               variant="outline"
@@ -421,8 +428,8 @@ export function EventDialog({
             </Button>
             <Button onClick={handleSave}>Save</Button>
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }

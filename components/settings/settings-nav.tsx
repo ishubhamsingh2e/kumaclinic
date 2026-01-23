@@ -61,7 +61,11 @@ export function SettingsNav({
   };
 
   return (
-    <Tabs value={getCurrentValue()} onValueChange={handleValueChange} className="w-full">
+    <Tabs
+      value={getCurrentValue()}
+      onValueChange={handleValueChange}
+      className="w-full"
+    >
       <TabsList>
         {navItems
           .filter((item) => item.show)

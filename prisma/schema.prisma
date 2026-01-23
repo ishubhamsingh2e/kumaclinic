@@ -33,18 +33,22 @@ model ApiKey {
 }
 
 model Booking {
-  id        String   @id @default(cuid())
-  patientId String
-  clinicId  String
-  start     DateTime
-  end       DateTime
-  title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  doctorId  String?
-  Clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  User      User?    @relation(fields: [doctorId], references: [id])
-  Patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  patientId    String
+  clinicId     String
+  start        DateTime
+  end          DateTime
+  title        String
+  status       BookingStatus @default(PENDING)
+  reason       String?
+  notes        String?
+  cancelReason String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  doctorId     String?
+  Clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  User         User?         @relation(fields: [doctorId], references: [id])
+  Patient      Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }
 
 model Clinic {
@@ -318,4 +322,12 @@ enum MaritalStatus {
   MARRIED
   DIVORCED
   WIDOWED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
 }

@@ -131,7 +131,7 @@ export function RoleSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[600px] overflow-y-auto h-full">
+      <SheetContent className="sm:min-w-2xl overflow-y-auto h-full">
         <form className="h-full flex flex-col" onSubmit={handleSubmit}>
           <SheetHeader>
             <SheetTitle>

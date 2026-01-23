@@ -401,7 +401,7 @@ export default function UserManagementClient({
       <Sheet open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <SheetContent
           side="right"
-          className="overflow-y-auto w-full sm:max-w-lg"
+          className="overflow-y-auto w-full sm:min-w-2xl"
         >
           <SheetHeader>
             <SheetTitle>User Details</SheetTitle>
