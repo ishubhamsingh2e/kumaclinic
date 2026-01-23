@@ -34,6 +34,7 @@ import {
 const inviteSchema = z.object({
   email: z.string().email("Invalid email address"),
   roleId: z.string().min(1, "Role is required"),
+  clinicId: z.string().min(1, "Clinic is required"),
 });
 
 type InviteFormValues = z.infer<typeof inviteSchema>;
@@ -44,18 +45,27 @@ interface Role {
   priority: number;
 }
 
+interface Clinic {
+  id: string;
+  name: string;
+}
+
 interface InviteUserSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   roles: Role[];
+  clinics: Clinic[];
   currentUserRole?: Role;
+  defaultClinicId?: string;
 }
 
 export function InviteUserSheet({
   open,
   onOpenChange,
   roles,
+  clinics,
   currentUserRole,
+  defaultClinicId,
 }: InviteUserSheetProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,6 +75,7 @@ export function InviteUserSheet({
     defaultValues: {
       email: "",
       roleId: "",
+      clinicId: defaultClinicId || "",
     },
   });
 
@@ -113,6 +124,33 @@ export function InviteUserSheet({
           className="space-y-6 p-4 h-full flex flex-col justify-between"
         >
           <div className="space-y-4">
+            <Field>
+              <FieldLabel>Clinic</FieldLabel>
+              <FieldContent>
+                <Select
+                  value={form.watch("clinicId")}
+                  onValueChange={(value) => form.setValue("clinicId", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a clinic" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clinics.map((clinic) => (
+                      <SelectItem key={clinic.id} value={clinic.id}>
+                        {clinic.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+              {form.formState.errors.clinicId && (
+                <FieldError>{form.formState.errors.clinicId.message}</FieldError>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Select which clinic to invite the user to
+              </p>
+            </Field>
+
             <Field>
               <FieldLabel>Email Address</FieldLabel>
               <FieldContent>

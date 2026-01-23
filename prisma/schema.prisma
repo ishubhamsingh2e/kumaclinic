@@ -68,10 +68,22 @@ model Clinic {
   linkedin             String?
   showOwnerInfo        Boolean                @default(true)
   ownerFieldsToShow    Json?
+  // Branch management
+  isBranch             Boolean                @default(false)
+  parentClinicId       String?
+  parentClinic         Clinic?                @relation("ClinicBranches", fields: [parentClinicId], references: [id], onDelete: SetNull)
+  branches             Clinic[]               @relation("ClinicBranches")
+  // Address fields (each clinic is one location)
+  address              String?
+  city                 String?
+  state                String?
+  country              String?
+  zip                  String?
+  googleMapsUrl        String?
+  openingHours         Json?
   ApiKey               ApiKey[]
   Booking              Booking[]
   User                 User?                  @relation(fields: [ownerId], references: [id])
-  ClinicLocation       ClinicLocation[]
   ClinicMember         ClinicMember[]
   ClinicSettings       ClinicSettings?
   DoctorAvailability   DoctorAvailability[]
@@ -80,24 +92,6 @@ model Clinic {
   Invitation           Invitation[]
 }
 
-model ClinicLocation {
-  id            String   @id @default(cuid())
-  clinicId      String
-  name          String
-  address       String
-  city          String?
-  state         String?
-  country       String?
-  zip           String?
-  phone         String?
-  email         String?
-  whatsapp      String?
-  googleMapsUrl String?
-  openingHours  Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  Clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-}
 
 model ClinicMember {
   id        String   @id @default(cuid())

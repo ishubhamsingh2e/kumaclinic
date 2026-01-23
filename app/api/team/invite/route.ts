@@ -11,6 +11,7 @@ import { createNotification } from "@/lib/actions/notification";
 const inviteSchema = z.object({
   email: z.string().email(),
   roleId: z.string(),
+  clinicId: z.string(),
 });
 
 export async function POST(req: NextRequest) {
@@ -33,10 +34,28 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const validatedData = inviteSchema.parse(body);
 
+    // Verify user has access to the specified clinic
+    const userMembership = await prisma.clinicMember.findUnique({
+      where: {
+        userId_clinicId: {
+          userId: session.user.id,
+          clinicId: validatedData.clinicId,
+        },
+      },
+      include: { Role: true },
+    });
+
+    if (!userMembership) {
+      return NextResponse.json(
+        { error: "You don't have access to this clinic" },
+        { status: 403 }
+      );
+    }
+
     // Check if user is already a member
     const existingMember = await prisma.clinicMember.findFirst({
       where: {
-        clinicId: session.user.activeClinicId,
+        clinicId: validatedData.clinicId,
         User: {
           email: validatedData.email,
         },
@@ -54,7 +73,7 @@ export async function POST(req: NextRequest) {
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
         email: validatedData.email,
-        clinicId: session.user.activeClinicId,
+        clinicId: validatedData.clinicId,
         status: "PENDING",
       },
     });
@@ -66,24 +85,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get current user's role for hierarchy check
-    const currentMembership = await prisma.clinicMember.findUnique({
-      where: {
-        userId_clinicId: {
-          userId: session.user.id,
-          clinicId: session.user.activeClinicId,
-        },
-      },
-      include: { Role: true },
-    });
-
-    if (!currentMembership) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     // Check role hierarchy
     const canInviteRole = await canManageRole(
-      currentMembership.roleId,
+      userMembership.roleId,
       validatedData.roleId
     );
 
@@ -98,7 +102,7 @@ export async function POST(req: NextRequest) {
     const invitation = await prisma.invitation.create({
       data: {
         email: validatedData.email,
-        clinicId: session.user.activeClinicId,
+        clinicId: validatedData.clinicId,
         roleId: validatedData.roleId,
         inviterId: session.user.id,
         token: Math.random().toString(36).substring(2) + Date.now().toString(36),

@@ -40,6 +40,10 @@ interface Member {
     image: string | null;
   };
   Role: Role;
+  Clinic: {
+    id: string;
+    name: string;
+  };
 }
 
 interface TeamMembersTableProps {
@@ -111,6 +115,7 @@ export function TeamMembersTable({
             <TableRow>
               <TableHead>Member</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Clinic</TableHead>
               <TableHead>Role</TableHead>
               <TableHead className="w-[70px]"></TableHead>
             </TableRow>
@@ -118,7 +123,7 @@ export function TeamMembersTable({
           <TableBody>
             {members.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   No team members found
                 </TableCell>
               </TableRow>
@@ -150,6 +155,11 @@ export function TeamMembersTable({
                     </div>
                   </TableCell>
                   <TableCell>{member.User.email}</TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">
+                      {member.Clinic.name}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">{member.Role.name}</Badge>
                   </TableCell>

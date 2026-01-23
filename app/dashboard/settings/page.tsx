@@ -225,9 +225,6 @@ export default async function SettingsPage() {
 
   const clinic = await prisma.clinic.findUnique({
     where: { id: activeClinicId },
-    include: {
-      ClinicLocation: true,
-    },
   });
 
   if (!clinic) {
@@ -237,6 +234,30 @@ export default async function SettingsPage() {
       </DashboardView>
     );
   }
+
+  // Fetch all user's clinics for the clinics list
+  const allUserClinics = await prisma.clinic.findMany({
+    where: {
+      ClinicMember: {
+        some: {
+          userId: user.id,
+        },
+      },
+    },
+    include: {
+      ClinicMember: {
+        where: {
+          userId: user.id,
+        },
+        include: {
+          Role: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   const { settings: clinicSettings } = await getClinicSettings({
     clinicId: activeClinicId,
@@ -283,6 +304,12 @@ export default async function SettingsPage() {
               id: true,
               name: true,
               priority: true,
+            },
+          },
+          Clinic: {
+            select: {
+              id: true,
+              name: true,
             },
           },
         },
@@ -396,6 +423,7 @@ export default async function SettingsPage() {
       pendingInvitations={pendingInvitations}
       roles={teamRoles}
       clinic={clinic}
+      allClinics={allUserClinics}
       currentUserId={user.id}
       currentUserRole={
         teamMembers.find((m) => m.userId === user.id)?.Role
@@ -408,7 +436,11 @@ export default async function SettingsPage() {
   ) : null;
 
   const clinicManagementContent = (
-    <ClinicManagementTab clinic={clinic} settings={clinicSettings ?? null} />
+    <ClinicManagementTab 
+      clinic={clinic} 
+      settings={clinicSettings ?? null} 
+      allClinics={allUserClinics}
+    />
   );
 
   const integrationsContent = <IntegrationsTab />;

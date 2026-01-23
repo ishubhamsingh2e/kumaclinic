@@ -22,6 +22,12 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Instagram, Facebook, Twitter, Linkedin } from "lucide-react";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  TwitterIcon,
+} from "../icons";
 
 const socialMediaSchema = z.object({
   instagram: z.string().url().optional().or(z.literal("")),
@@ -39,31 +45,31 @@ interface SocialMediaLinksFormProps {
 const socialFields: {
   name: keyof FormValues;
   label: string;
-  icon: typeof Instagram;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   placeholder: string;
 }[] = [
   {
     name: "instagram",
     label: "Instagram",
-    icon: Instagram,
+    icon: InstagramIcon,
     placeholder: "https://instagram.com/yourprofile",
   },
   {
     name: "facebook",
     label: "Facebook",
-    icon: Facebook,
+    icon: FacebookIcon,
     placeholder: "https://facebook.com/yourpage",
   },
   {
     name: "twitter",
     label: "Twitter/X",
-    icon: Twitter,
+    icon: TwitterIcon,
     placeholder: "https://twitter.com/yourprofile",
   },
   {
     name: "linkedin",
     label: "LinkedIn",
-    icon: Linkedin,
+    icon: LinkedInIcon,
     placeholder: "https://linkedin.com/company/yourcompany",
   },
 ];

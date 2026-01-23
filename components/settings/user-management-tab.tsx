@@ -26,6 +26,10 @@ interface Member {
     image: string | null;
   };
   Role: Role;
+  Clinic: {
+    id: string;
+    name: string;
+  };
 }
 
 interface Invitation {
@@ -52,6 +56,7 @@ interface UserManagementTabProps {
   pendingInvitations: Invitation[];
   roles: Role[];
   clinic: Clinic | null;
+  allClinics: Clinic[];
   currentUserId: string;
   currentUserRole?: Role;
   isOwner: boolean;
@@ -65,6 +70,7 @@ export function UserManagementTab({
   pendingInvitations,
   roles,
   clinic,
+  allClinics,
   currentUserId,
   currentUserRole,
   isOwner,
@@ -183,7 +189,9 @@ export function UserManagementTab({
           open={inviteSheetOpen}
           onOpenChange={setInviteSheetOpen}
           roles={roles}
+          clinics={allClinics}
           currentUserRole={currentUserRole}
+          defaultClinicId={clinic?.id}
         />
       )}
 
