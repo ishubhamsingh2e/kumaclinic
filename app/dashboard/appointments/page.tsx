@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { AppointmentsCalendar } from "@/components/appointments/appointments-calendar";
+import { AppointmentsAgenda } from "@/components/appointments/appointments-agenda";
 import DashboardView from "@/components/dashboard-view";
 import { prisma } from "@/lib/db";
 
@@ -81,8 +81,8 @@ export default async function AppointmentsPage({
 
   return (
     <DashboardView title="Appointments">
-      <AppointmentsCalendar
-        bookings={bookings}
+      <AppointmentsAgenda
+        initialBookings={bookings}
         currentUserId={session.user.id}
         activeClinicId={activeClinicId}
       />
