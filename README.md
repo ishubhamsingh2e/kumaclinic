@@ -1,5 +1,33 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Features
+
+### Redis Caching
+This application uses Redis for high-performance caching to reduce database load and improve response times.
+
+**Cached Endpoints:**
+- User clinics list
+- Medicines with search and pagination
+- Available appointment slots
+- And more...
+
+**Configuration:**
+```bash
+# .env
+REDIS_URL=redis://localhost:6379
+```
+
+**Testing:**
+```bash
+# Test Redis connection
+node scripts/test-redis.js
+
+# Test cache utility
+node scripts/test-cache.js
+```
+
+See [REDIS_CACHE.md](./REDIS_CACHE.md) for detailed documentation.
+
 ## Getting Started
 
 First, run the development server:
