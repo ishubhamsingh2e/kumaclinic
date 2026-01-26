@@ -289,6 +289,8 @@ model User {
   NotificationSettings NotificationSettings?
   Log                  Log[]
   Session              Session[]
+  Medicine             Medicine[]
+  MedicineGroup        MedicineGroup[]
 
   @@index([defaultClinicId])
 }
@@ -368,4 +370,54 @@ enum LogType {
   SYSTEM
   EMAIL
   AUTH
+}
+
+model Medicine {
+  id             String   @id @default(cuid())
+  doctorId       String
+  type           String   // e.g., "Tablet", "Syrup", "Injection", "Capsule"
+  medicineName   String
+  dosage         String?  // e.g., "500mg", "10ml"
+  administration String?  // e.g., "Oral", "IV", "IM"
+  unit           String?  // e.g., "mg", "ml", "units"
+  time           String?  // e.g., "Morning", "Evening", "Night"
+  when           String?  // e.g., "Before meals", "After meals", "Empty stomach"
+  where          String?  // e.g., "Left arm", "Right thigh"
+  genericName    String?
+  frequency      String?  // e.g., "Once daily", "Twice daily", "As needed"
+  duration       String?  // e.g., "5 days", "1 week", "1 month"
+  qty            String?  // Quantity
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  User           User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  MedicineGroupItem MedicineGroupItem[]
+
+  @@index([doctorId])
+  @@index([medicineName])
+}
+
+model MedicineGroup {
+  id        String   @id @default(cuid())
+  doctorId  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User     @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  MedicineGroupItem MedicineGroupItem[]
+
+  @@index([doctorId])
+}
+
+model MedicineGroupItem {
+  id             String         @id @default(cuid())
+  groupId        String
+  medicineId     String
+  createdAt      DateTime       @default(now())
+  MedicineGroup  MedicineGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  Medicine       Medicine       @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, medicineId])
+  @@index([groupId])
+  @@index([medicineId])
 }

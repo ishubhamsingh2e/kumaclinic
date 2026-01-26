@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation"; // Added import
 import { usePermissions } from "@/hooks/use-permissions";
 import { PERMISSIONS } from "@/lib/permissions";
-import { LayoutDashboard, User, Calendar, CalendarCheck } from "lucide-react";
+import { LayoutDashboard, User, CalendarCheck } from "lucide-react";
 
 import { NavMain } from "@/components/sidebar/nav-main";
 import { NavSecondary } from "@/components/sidebar/nav-secondary";
@@ -20,6 +21,24 @@ import {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const { hasPermission } = usePermissions();
+  const [pendingCount, setPendingCount] = React.useState<number | null>(null);
+  const pathname = usePathname(); // Get current pathname
+
+  React.useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const response = await fetch("/api/appointments/count");
+        if (response.ok) {
+          const data = await response.json();
+          setPendingCount(data.count);
+        }
+      } catch (error) {
+        console.error("Failed to fetch appointment count", error);
+      }
+    };
+
+    fetchCount();
+  }, []);
 
   const navMain = [
     {
@@ -39,12 +58,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/dashboard/appointments",
       icon: CalendarCheck,
       permission: PERMISSIONS.APPOINTMENT_READ,
-    },
-    {
-      title: "Calendar",
-      url: "/dashboard/calendar",
-      icon: Calendar,
-      permission: PERMISSIONS.APPOINTMENT_READ,
+      badge: pendingCount,
     },
   ];
 
@@ -55,9 +69,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     title: session?.user?.title ?? "",
   };
 
-  const filteredNav = navMain.filter(
-    (item) => !item.permission || hasPermission(item.permission),
-  );
+  const filteredNav = navMain
+    .filter((item) => !item.permission || hasPermission(item.permission))
+    .map((item) => ({
+      ...item,
+      isActive:
+        pathname === item.url ||
+        (item.url !== "/dashboard" && pathname.startsWith(item.url)),
+    }));
 
   return (
     <Sidebar variant="inset" {...props}>

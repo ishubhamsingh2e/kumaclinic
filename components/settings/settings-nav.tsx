@@ -7,12 +7,14 @@ interface SettingsNavProps {
   hasClinic: boolean;
   isManager: boolean;
   canManageUsers: boolean;
+  isDoctor?: boolean;
 }
 
 export function SettingsNav({
   hasClinic,
   isManager,
   canManageUsers,
+  isDoctor = false,
 }: SettingsNavProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -23,6 +25,12 @@ export function SettingsNav({
       href: "/dashboard/settings",
       value: "account",
       show: true,
+    },
+    {
+      title: "Medicine Library",
+      href: "/dashboard/settings/medicines",
+      value: "medicines",
+      show: isDoctor,
     },
     {
       title: "Clinic Management",
@@ -47,6 +55,7 @@ export function SettingsNav({
   // Determine current value based on pathname
   const getCurrentValue = () => {
     if (pathname === "/dashboard/settings") return "account";
+    if (pathname === "/dashboard/settings/medicines") return "medicines";
     if (pathname === "/dashboard/settings/clinic") return "clinic";
     if (pathname === "/dashboard/settings/users") return "users";
     if (pathname === "/dashboard/settings/integrations") return "integrations";
