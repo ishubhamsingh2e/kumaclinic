@@ -110,7 +110,7 @@ export function DoctorAvailabilityManager({
             <TabsTrigger value="weekly-off">Weekly Off Days</TabsTrigger>
             <TabsTrigger value="specific-off">Specific Off Days</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="availability" className="space-y-4">
             <DoctorAvailabilityForm
               key={selectedClinic.id}
@@ -128,7 +128,7 @@ export function DoctorAvailabilityManager({
           </TabsContent>
 
           <TabsContent value="weekly-off" className="space-y-4">
-            <WeeklyOffDaysSelector 
+            <WeeklyOffDaysSelector
               clinicId={selectedClinic.id}
               onUpdate={() => fetchWeeklyOffDays(selectedClinic.id)}
             />
