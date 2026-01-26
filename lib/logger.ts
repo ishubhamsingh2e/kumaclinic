@@ -17,10 +17,10 @@ async function getRedisClient() {
 
   try {
     redisClient = new Redis(REDIS_URL);
-    console.log("✓ Logger Redis client connected");
+    fileLogger.info("Logger Redis client connected");
     return redisClient;
   } catch (error) {
-    console.warn("⚠ Redis not available for logging:", error);
+    fileLogger.warn("Redis not available for logging:", error);
     return null;
   }
 }
@@ -31,13 +31,13 @@ async function publishLog(log: any) {
     const client = await getRedisClient();
     if (client?.status === "ready") {
       await client.publish("system:logs", JSON.stringify(log));
-      console.log("📤 Published log to Redis:", log.id);
+      fileLogger.debug("Published log to Redis:", log.id);
     } else {
-      console.log("⚠ Redis not ready, skipping publish. Status:", client?.status);
+      fileLogger.warn("Redis not ready, skipping publish. Status:", client?.status);
     }
   } catch (error) {
     // Silently fail - real-time streaming is not critical
-    console.debug("Failed to publish log to Redis:", error);
+    fileLogger.debug("Failed to publish log to Redis:", error);
   }
 }
 
@@ -97,10 +97,18 @@ class Logger {
     duration?: number;
   }) {
     try {
+      const shouldPublish = data.metadata?.publish !== false;
+
+      // Clean the metadata before saving
+      const cleanMetadata = { ...data.metadata };
+      if (cleanMetadata.publish !== undefined) {
+        delete cleanMetadata.publish;
+      }
+
       const log = await prisma.log.create({
         data: {
           ...data,
-          metadata: data.metadata ? JSON.parse(JSON.stringify(data.metadata)) : undefined,
+          metadata: Object.keys(cleanMetadata).length > 0 ? cleanMetadata : undefined,
         },
         include: {
           User: {
@@ -113,10 +121,12 @@ class Logger {
         },
       });
 
-      // Publish to Redis for real-time streaming (non-blocking)
-      publishLog(log).catch(() => {
-        // Ignore errors in pub/sub
-      });
+      // Publish to Redis for real-time streaming if not explicitly disabled
+      if (shouldPublish) {
+        publishLog(log).catch(() => {
+          // Ignore errors in pub/sub
+        });
+      }
 
       return log;
     } catch (error) {
