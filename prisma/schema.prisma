@@ -284,6 +284,7 @@ model User {
   signatureUrl         String?
   title                String?
   slotDurationInMin    Int?                   @default(30)
+  prescriptionLayout   Json?                  // Stores widget layout as JSON
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
   Account              Account[]
@@ -303,6 +304,8 @@ model User {
   MedicineGroup        MedicineGroup[]
   PrintSettings        PrintSettings[]
   DoctorVisitRate      DoctorVisitRate[]
+  DoctorWidgets        DoctorWidget[]
+  CustomWidgets        CustomWidget[]
 
   @@index([defaultClinicId])
 }
@@ -517,4 +520,84 @@ model PrintSettings {
   @@unique([doctorId, clinicId])
   @@index([doctorId])
   @@index([clinicId])
+}
+
+// ============================================
+// PRESCRIPTION WIDGET SYSTEM
+// ============================================
+
+// Master table for all available widgets
+model Widget {
+  id            String   @id @default(cuid())
+  name          String   // "Vitals", "Diagnosis", "Dental Exam"
+  type          String   // "system" or "custom"
+  componentName String?  // React component name for system widgets
+  specialty     String?  // null = common to all, "DENTAL", "ENT", etc.
+  description   String?
+  defaultWidth  String   @default("full") // "full" or "half"
+  icon          String?  // Icon name from lucide-react
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  DoctorWidgets DoctorWidget[]
+  CustomWidgets CustomWidget[]
+
+  @@index([specialty])
+  @@index([type])
+}
+
+// Doctor's customized widget layout
+model DoctorWidget {
+  id        String   @id @default(cuid())
+  doctorId  String
+  widgetId  String
+  position  Int      // 1, 2, 3... for ordering
+  visible   Boolean  @default(true)
+  width     String   @default("full") // "full" or "half"
+  config    Json?    // Additional widget-specific config
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Doctor User   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  Widget Widget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, widgetId])
+  @@index([doctorId])
+  @@index([position])
+}
+
+// Custom widget definitions created by doctors
+model CustomWidget {
+  id             String   @id @default(cuid())
+  doctorId       String
+  widgetId       String   // Links to Widget master
+  title          String
+  fieldsJson     Json     // Field definitions
+  validationJson Json?    // Validation rules
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  Doctor User                 @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  Widget Widget               @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+  Values CustomWidgetValue[]
+
+  @@unique([doctorId, widgetId])
+  @@index([doctorId])
+}
+
+// Generic storage for custom widget field values
+model CustomWidgetValue {
+  id             String   @id @default(cuid())
+  prescriptionId String
+  widgetId       String
+  fieldKey       String   // Field identifier from fieldsJson
+  fieldValue     String   // Stored as string, parsed by type
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  CustomWidget CustomWidget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId, widgetId])
+  @@index([widgetId])
 }

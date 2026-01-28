@@ -33,6 +33,12 @@ export function SettingsNav({
       show: isDoctor,
     },
     {
+      title: "Prescription Settings",
+      href: "/dashboard/settings/prescription",
+      value: "prescription",
+      show: isDoctor,
+    },
+    {
       title: "Print Settings",
       href: "/dashboard/settings/print-settings",
       value: "print-settings",
@@ -62,6 +68,7 @@ export function SettingsNav({
   const getCurrentValue = () => {
     if (pathname === "/dashboard/settings") return "account";
     if (pathname?.startsWith("/dashboard/settings/medicines")) return "medicines";
+    if (pathname?.startsWith("/dashboard/settings/prescription")) return "prescription";
     if (pathname === "/dashboard/settings/print-settings") return "print-settings";
     if (pathname === "/dashboard/settings/clinic") return "clinic";
     if (pathname === "/dashboard/settings/users") return "users";
